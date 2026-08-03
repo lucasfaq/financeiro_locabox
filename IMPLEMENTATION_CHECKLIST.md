@@ -100,7 +100,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 
 - [x] Entradas de navegação para Empresas, Equipe e Configurações.
 - [x] Cadastro e ativação/desativação de empresas.
-- [-] Gestão de equipe com criação, papéis, bloqueio e redefinição de senha; convites, vínculos organizacionais e edição de papel ainda pendentes.
+- [-] Gestão de equipe com criação, edição de papel, bloqueio e redefinição de senha; convites e vínculos organizacionais ainda pendentes.
 - [ ] Configurações de status, tipos de tarefa, campos personalizados e SLA.
 - [ ] Matriz de permissão e revisão de acessos.
 - [ ] Logs de atividade, exportação e retenção de dados.
