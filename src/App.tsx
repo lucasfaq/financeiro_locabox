@@ -42,6 +42,14 @@ const localDepartmentFolders: Record<string, DepartmentFolder[]> = {
 
 const money = (value: number) => value ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "-";
 const asWorkspaceList = (rawList: WorkspaceList | string, department: string, folderId: string): WorkspaceList => typeof rawList === "string" ? { id: `${department}-${folderId}-${rawList}`, name: rawList } : rawList;
+const taskDate = (due: string) => {
+  if (due === "Hoje") return new Date();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(due)) return new Date(`${due}T12:00:00`);
+  const brazilian = due.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (brazilian) return new Date(Number(brazilian[3]), Number(brazilian[2]) - 1, Number(brazilian[1]), 12);
+  const short = due.match(/^(\d{1,2})\s+ago$/i);
+  return short ? new Date(new Date().getFullYear(), 7, Number(short[1]), 12) : null;
+};
 
 function Workspace() {
   const [tasks, setTasks] = usePersistentState("itp-financeiro-tasks", initialTasks);
@@ -81,6 +89,7 @@ function Workspace() {
     { author: "Marina Alves", initials: "MA", time: "09:18", text: "Vou validar as retenções antes de enviar para aprovação." },
   ]);
   const [taskView, setTaskView] = useState<"Lista" | "Quadro" | "Calendário" | "Gantt">("Lista");
+  const [calendarCursor, setCalendarCursor] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [usesRemoteTasks, setUsesRemoteTasks] = useState(false);
 
@@ -125,6 +134,11 @@ function Workspace() {
   const selectedList = allLists.find((list) => list.id === selectedListId);
   const visibleTasks = useMemo(() => tasks.filter((task) => (filter === "Todos" || task.status === filter) && task.title.toLowerCase().includes(search.toLowerCase()) && (!selectedListId || (task.listId || "financeiro-pagamentos") === selectedListId)), [tasks, filter, search, selectedListId]);
   const approvalTasks = tasks.filter((task) => task.status === "Em aprovação");
+  const calendarCells = useMemo(() => {
+    const year = calendarCursor.getFullYear(); const month = calendarCursor.getMonth();
+    const startsOn = new Date(year, month, 1).getDay(); const totalDays = new Date(year, month + 1, 0).getDate();
+    return Array.from({ length: Math.ceil((startsOn + totalDays) / 7) * 7 }, (_, index) => index - startsOn + 1).map((day) => day > 0 && day <= totalDays ? day : null);
+  }, [calendarCursor]);
 
   const decideApproval = async (id: Task["id"], approved: boolean) => {
     const justification = approved ? null : window.prompt("Informe o motivo da devolução:");
@@ -244,7 +258,7 @@ function Workspace() {
       {!channelOpen && <section className="views-studio"><div className="views-heading"><div><p className="eyebrow">DEPARTAMENTO / FINANCEIRO</p><h2>Visões de tarefas</h2></div><div className="view-tabs">{(["Lista", "Quadro", "Calendário", "Gantt"] as const).map((view) => <button key={view} className={taskView === view ? "selected" : ""} onClick={() => setTaskView(view)}>{view}</button>)}<button className="new-view" onClick={() => setNotice("Nova visualização criada. A configuração será salva por departamento no Supabase.")}>+ Nova visão</button></div></div>
         {taskView === "Lista" && <div className="compact-list">{tasks.map((task) => <div key={task.id}><span className={`priority ${task.priority.toLowerCase()}`}/><strong>{task.title}</strong><small>{task.owner} · {task.due}</small><span className={`status ${task.status.toLowerCase().replace(" ", "-")}`}>{task.status}</span></div>)}</div>}
         {taskView === "Quadro" && <div className="kanban">{(["Pendente", "Em aprovação", "Aprovado", "Executado"] as Status[]).map((status) => <div className="kanban-column" key={status}><header><strong>{status}</strong><span>{tasks.filter((task) => task.status === status).length}</span></header>{tasks.filter((task) => task.status === status).map((task) => <article key={task.id}><span className={task.priority === "Alta" ? "tag red-tag" : "tag"}>{task.company}</span><strong>{task.title}</strong><p>{task.owner} · {task.due}</p></article>)}</div>)}</div>}
-        {taskView === "Calendário" && <div className="calendar-view"><div className="calendar-title"><strong>Agosto 2026</strong><span>Semana selecionada</span></div><div className="calendar-grid">{["Seg 03", "Ter 04", "Qua 05", "Qui 06", "Sex 07"].map((day, index) => <div key={day}><strong>{day}</strong>{tasks.filter((_, taskIndex) => taskIndex % 5 === index).map((task) => <button key={task.id} className="calendar-task">{task.title}</button>)}</div>)}</div></div>}
+        {taskView === "Calendário" && <div className="calendar-view"><div className="calendar-title"><button className="secondary-button" onClick={() => setCalendarCursor((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>‹</button><strong>{calendarCursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</strong><button className="secondary-button" onClick={() => setCalendarCursor((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>›</button></div><div className="calendar-weekdays">{["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => <span key={day}>{day}</span>)}</div><div className="calendar-grid monthly">{calendarCells.map((day, index) => <div key={`${calendarCursor.toISOString()}-${index}`} className={day ? "calendar-day" : "calendar-day outside"}>{day && <><strong>{day}</strong>{tasks.filter((task) => { const date = taskDate(task.due); return date?.getFullYear() === calendarCursor.getFullYear() && date.getMonth() === calendarCursor.getMonth() && date.getDate() === day; }).map((task) => <button key={task.id} className="calendar-task" onClick={() => setDetailTask(task)}>{task.title}</button>)}</>}</div>)}</div></div>}
         {taskView === "Gantt" && <div className="gantt-view"><div className="gantt-scale"><span>03 ago</span><span>05 ago</span><span>07 ago</span><span>11 ago</span></div>{tasks.map((task, index) => <div className="gantt-row" key={task.id}><strong>{task.title}</strong><div><i style={{ marginLeft: `${index * 12}%`, width: `${34 + (index % 3) * 12}%` }}>{task.status}</i></div></div>)}</div>}
       </section>}
       </div>
