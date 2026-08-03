@@ -15,7 +15,7 @@ import { usePersistentState } from "./usePersistentState";
 import { AuthGate } from "./AuthGate";
 import { AdminUsers } from "./AdminUsers";
 import { TaskDetail } from "./TaskDetail";
-import { createFinancialTask, loadFinancialTasks, loadWorkspaceHierarchy, updateFinancialTaskStatus } from "./workspaceRepository";
+import { createFinancialTask, decideFinancialApproval, loadFinancialTasks, loadWorkspaceHierarchy } from "./workspaceRepository";
 import { supabase } from "./supabaseClient";
 
 type Status = "Pendente" | "Em aprovação" | "Aprovado" | "Executado";
@@ -125,13 +125,15 @@ function Workspace() {
   const visibleTasks = useMemo(() => tasks.filter((task) => (filter === "Todos" || task.status === filter) && task.title.toLowerCase().includes(search.toLowerCase()) && (!selectedListId || (task.listId || "financeiro-pagamentos") === selectedListId)), [tasks, filter, search, selectedListId]);
   const approvalTasks = tasks.filter((task) => task.status === "Em aprovação");
 
-  const updateStatus = async (id: Task["id"], status: Status) => {
+  const decideApproval = async (id: Task["id"], approved: boolean) => {
+    const justification = approved ? null : window.prompt("Informe o motivo da devolução:");
+    if (!approved && justification === null) return;
     if (usesRemoteTasks && typeof id === "string") {
-      try { await updateFinancialTaskStatus(id, status); }
-      catch { setNotice("Não foi possível atualizar a atividade compartilhada."); return; }
+      try { await decideFinancialApproval(id, approved ? "aprovado" : "devolvido", justification?.trim() || null); }
+      catch { setNotice("Não foi possível registrar a decisão de aprovação."); return; }
     }
-    setTasks((current) => current.map((task) => task.id === id ? { ...task, status } : task));
-    setNotice(status === "Aprovado" ? "Solicitação aprovada e registrada no histórico." : "Solicitação devolvida para ajuste.");
+    setTasks((current) => current.map((task) => task.id === id ? { ...task, status: approved ? "Aprovado" : "Pendente" } : task));
+    setNotice(approved ? "Aprovação registrada no histórico." : "Devolução registrada no histórico.");
     window.setTimeout(() => setNotice(""), 3600);
   };
 
@@ -231,7 +233,7 @@ function Workspace() {
       </div>
       {!channelOpen && <div className="content-grid">
         <section className="task-panel"><div className="panel-header"><div><h2>Atividades recentes</h2><p>Acompanhamento operacional do financeiro</p></div><button className="text-button" onClick={() => { setSection("Atividades"); setFilter("Todos"); }}>Ver todas</button></div><div className="toolbar"><div className="search"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar atividade" /></div><div className="filters">{(["Todos", "Pendente", "Em aprovação", "Aprovado", "Executado"] as const).map((item) => <button key={item} className={filter === item ? "filter selected" : "filter"} onClick={() => setFilter(item)}>{item}</button>)}</div></div><div className="task-list">{visibleTasks.map((task) => <article className="task-row" key={task.id} onClick={() => setDetailTask(task)}><span className={`priority ${task.priority.toLowerCase()}`} /><div className="task-main"><strong>{task.title}</strong><span>{task.company} <em>•</em> {task.category}</span></div><div className="task-meta"><span>Vencimento</span><strong className={task.due === "Hoje" ? "urgent" : ""}>{task.due}</strong></div><div className="task-meta"><span>Responsável</span><strong>{task.owner}</strong></div><div className="task-value">{money(task.value)}</div><span className={`status ${task.status.toLowerCase().replace(" ", "-")}`}>{task.status}</span></article>)}{visibleTasks.length === 0 && <p className="empty">Nenhuma atividade encontrada.</p>}</div></section>
-        <aside className="approval-panel"><div className="panel-header"><div><h2>Para sua aprovação</h2><p>Decisões que exigem sua ação</p></div></div>{approvalTasks.map((task) => <article className="approval-card" key={task.id}><span>{task.company}</span><h3>{task.title}</h3><p>{task.category} <em>•</em> {task.due}</p><strong>{money(task.value)}</strong><div><button className="secondary-button" onClick={() => updateStatus(task.id, "Pendente")}>Devolver</button><button className="approve-button" onClick={() => updateStatus(task.id, "Aprovado")}>Aprovar</button></div></article>)}{approvalTasks.length === 0 && <p className="empty">Não há aprovações pendentes.</p>}</aside>
+        <aside className="approval-panel"><div className="panel-header"><div><h2>Para sua aprovação</h2><p>Decisões que exigem sua ação</p></div></div>{approvalTasks.map((task) => <article className="approval-card" key={task.id}><span>{task.company}</span><h3>{task.title}</h3><p>{task.category} <em>•</em> {task.due}</p><strong>{money(task.value)}</strong><div><button className="secondary-button" onClick={() => void decideApproval(task.id, false)}>Devolver</button><button className="approve-button" onClick={() => void decideApproval(task.id, true)}>Aprovar</button></div></article>)}{approvalTasks.length === 0 && <p className="empty">Não há aprovações pendentes.</p>}</aside>
       </div>}
       <section className={channelOpen ? "channel-workspace" : "collaboration-strip"}>
         <div className="channel-summary"><span className="channel-icon"><MessageCircle size={18} /></span><p className="eyebrow">{channelName === "Geral" ? "DEPARTAMENTO / FINANCEIRO" : "MENSAGEM DIRETA"}</p><h2>{channelName === "Geral" ? "# Geral" : channelName}</h2><p>{channelName === "Geral" ? "Canal geral para alinhamentos e comunicação da equipe financeira." : "Conversa direta entre membros da equipe."}</p><button className="text-button" onClick={() => { setChannelOpen(!channelOpen); setSection(channelOpen ? "Visão geral" : "Canais"); }}>{channelOpen ? "Voltar ao painel" : "Abrir canal"}</button></div>

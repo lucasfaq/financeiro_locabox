@@ -68,6 +68,16 @@ export async function updateFinancialTaskStatus(id: string, status: RemoteTaskSt
   if (error) throw error;
 }
 
+export async function decideFinancialApproval(taskId: string, decision: "aprovado" | "devolvido", justification: string | null): Promise<void> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const userId = await getCurrentUserId();
+  const { error: approvalError } = await supabase.from("aprovacoes_financeiras").insert({ atividade_id: taskId, aprovador_id: userId, decisao: decision, justificativa: justification, decidido_em: new Date().toISOString() });
+  if (approvalError) throw approvalError;
+  const status = decision === "aprovado" ? "aprovado" : "pendente";
+  const { error: taskError } = await supabase.from("atividades_financeiras").update({ status }).eq("id", taskId);
+  if (taskError) throw taskError;
+}
+
 export async function loadTaskDetails(taskId: string): Promise<{ subtasks: RemoteSubtask[]; comments: RemoteComment[]; attachments: RemoteAttachment[] }> {
   if (!supabase) throw new Error("Supabase não está configurado.");
   const [{ data: subtasks, error: subtasksError }, { data: comments, error: commentsError }, { data: attachments, error: attachmentsError }] = await Promise.all([
