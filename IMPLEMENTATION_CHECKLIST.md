@@ -23,7 +23,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [x] Persistência local por navegador com `localStorage`.
 - [x] Interface responsiva inicial e identidade ITP/Locabox.
 - [x] Lint e build aprovados.
-- [-] Cliente Supabase, migrations e carregamento autenticado da hierarquia (departamentos, pastas e listas) aplicados; tarefas e demais módulos ainda usam o fallback local.
+- [-] Cliente Supabase, migrations, carregamento autenticado de hierarquia e persistência de atividades aplicados; os demais módulos ainda usam fallback local.
 - [x] Projeto Supabase de teste escolhido e conectado (`qeeqtbjwkppahjaaqekp`).
 - [ ] Auth, RLS, Realtime e Storage validados em ambiente de teste.
 - [ ] Observabilidade, tratamento de erros, auditoria e backups.
@@ -44,17 +44,17 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 
 ## 3. Tarefas e aprovações
 
-- [x] Criar tarefa em branco com lista, título, tipo e campos financeiros.
-- [x] Status, prioridade, responsável, vencimento, empresa, categoria e valor demonstrativos.
-- [x] Aprovar ou devolver atividade localmente.
+- [-] Criar tarefa em branco com lista, título, tipo e campos financeiros; persiste no Supabase quando autenticado e preserva o modo local.
+- [-] Status, prioridade, responsável, vencimento, empresa, categoria e valor; status e os campos suportados persistem no Supabase quando autenticado.
+- [-] Aprovar ou devolver atividade; a mudança de status persiste no Supabase quando autenticado.
 - [x] Filtro por status e busca local por título.
 - [x] Visões locais: Lista, Quadro, Calendário e Gantt.
 - [-] Aba “A partir de template” leva à biblioteca, sem preencher uma tarefa a partir do modelo.
 - [-] Calendário e Gantt são visões demonstrativas, sem datas/intervalos reais.
-- [-] Página/painel de detalhe da tarefa local com subtarefas e comentários; persistência será conectada ao registro autenticado.
+- [-] Página/painel de detalhe com subtarefas, comentários e anexos privados persistidos para atividades autenticadas; recursos avançados continuam pendentes.
 - [-] Subtarefas, comentários e metadados de anexos persistentes modelados no Supabase; descrição rica, responsáveis múltiplos, etiquetas e dependências continuam pendentes.
 - [ ] Datas reais de início, vencimento, recorrência e alertas.
-- [-] Comentários e subtarefas persistentes modelados; falta conectar a interface, menções e progresso calculado.
+- [-] Comentários e subtarefas persistentes conectados à interface; menções e progresso calculado continuam pendentes.
 - [-] Subtarefas persistentes e progresso calculado: schema pronto, cálculo e integração pendentes.
 - [ ] Filtros avançados combináveis, ordenação, grupos e colunas configuráveis.
 - [ ] Tarefas fechadas/arquivadas e recuperação.
@@ -93,7 +93,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [ ] Caixa de Entrada consolidada com filtros: Todas, Principais, Outras, Mais tarde e Limpos.
 - [ ] Busca global de tarefas, listas, pessoas, mensagens e documentos.
 - [-] Documentos persistentes modelados; páginas, autosave, permissões e comentários pendentes.
-- [-] Bucket privado e metadados de anexos criados; falta upload, pré-visualização e vínculo pela interface.
+- [-] Bucket privado, upload, metadados e abertura por URL assinada conectados; pré-visualização continua pendente.
 - [-] Templates persistentes modelados; versionamento e uso para instanciar estruturas pendentes.
 
 ## 7. Gestão e administração

@@ -53,9 +53,9 @@ export async function createFinancialTask(task: CreateRemoteTask): Promise<Remot
   const { data: authData, error: authError } = await supabase.auth.getUser();
   if (authError) throw authError;
   if (!authData.user) throw new Error("Sessão expirada. Entre novamente para criar uma atividade.");
-  const { data: company, error: companyError } = await supabase.from("empresas").select("id,nome").eq("ativo", true).order("nome").limit(1).maybeSingle();
+  const { data: company, error: companyError } = await supabase.from("empresas").select("id,nome").eq("ativo", true).eq("nome", task.company).maybeSingle();
   if (companyError) throw companyError;
-  if (!company) throw new Error("Cadastre uma empresa ativa antes de criar atividades.");
+  if (!company) throw new Error(`Cadastre ou ative a empresa ${task.company} antes de criar atividades.`);
   const dueDate = /^\d{4}-\d{2}-\d{2}$/.test(task.due) ? task.due : null;
   const { data, error } = await supabase.from("atividades_financeiras").insert({ empresa_id: company.id, lista_id: task.listId || null, titulo: task.title, valor_previsto: task.value, vencimento: dueDate, prioridade: priorityToDatabase[task.priority], status: statusToDatabase[task.status], tipo: typeToDatabase[task.taskType], criado_por: authData.user.id }).select("id,titulo,valor_previsto,vencimento,prioridade,status,responsavel_id,lista_id,tipo,empresa_id").single();
   if (error) throw error;
