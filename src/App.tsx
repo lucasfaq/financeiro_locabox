@@ -15,6 +15,7 @@ import { usePersistentState } from "./usePersistentState";
 import { AuthGate } from "./AuthGate";
 import { TaskDetail } from "./TaskDetail";
 import { createFinancialTask, loadFinancialTasks, loadWorkspaceHierarchy, updateFinancialTaskStatus } from "./workspaceRepository";
+import { supabase } from "./supabaseClient";
 
 type Status = "Pendente" | "Em aprovação" | "Aprovado" | "Executado";
 type Task = { id: string | number; title: string; company: "ITP" | "Locabox"; category: string; due: string; owner: string; value: number; status: Status; priority: "Alta" | "Média" | "Baixa"; listId: string; taskType: "Tarefa" | "Aprovação" | "Financeiro" };
@@ -109,6 +110,15 @@ function Workspace() {
 
     return () => { active = false; };
   }, [setActiveDepartment, setDepartmentFolders, setDepartments, setExpandedDepartment, setExpandedFolders, setTasks]);
+
+  useEffect(() => {
+    const client = supabase;
+    if (!client || !usesRemoteTasks) return;
+    const channel = client.channel("atividades-financeiras").on("postgres_changes", { event: "*", schema: "public", table: "atividades_financeiras" }, () => {
+      void loadFinancialTasks().then((remoteTasks) => { if (remoteTasks) setTasks(remoteTasks); });
+    }).subscribe();
+    return () => { void client.removeChannel(channel); };
+  }, [setTasks, usesRemoteTasks]);
   const allLists = useMemo(() => Object.entries(departmentFolders).flatMap(([department, folders]) => folders.flatMap((folder) => folder.lists.map((rawList) => ({ ...asWorkspaceList(rawList, department, folder.id), department, folder: folder.name })))), [departmentFolders]);
   const selectedList = allLists.find((list) => list.id === selectedListId);
   const visibleTasks = useMemo(() => tasks.filter((task) => (filter === "Todos" || task.status === filter) && task.title.toLowerCase().includes(search.toLowerCase()) && (!selectedListId || (task.listId || "financeiro-pagamentos") === selectedListId)), [tasks, filter, search, selectedListId]);
