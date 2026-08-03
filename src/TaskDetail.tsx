@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export type DetailTask = { id: number; title: string; company: string; category: string; due: string; owner: string; value: number; status: string };
+export type DetailTask = { id: string | number; title: string; company: string; category: string; due: string; owner: string; value: number; status: string };
 
 export function TaskDetail({ task, onClose }: { task: DetailTask; onClose: () => void }) {
   const [subtasks, setSubtasks] = useState<{ id: number; title: string; done: boolean }[]>([]);

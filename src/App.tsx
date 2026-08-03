@@ -14,10 +14,10 @@ import "./TaskModal.css";
 import { usePersistentState } from "./usePersistentState";
 import { AuthGate } from "./AuthGate";
 import { TaskDetail } from "./TaskDetail";
-import { loadWorkspaceHierarchy } from "./workspaceRepository";
+import { createFinancialTask, loadFinancialTasks, loadWorkspaceHierarchy, updateFinancialTaskStatus } from "./workspaceRepository";
 
 type Status = "Pendente" | "Em aprovação" | "Aprovado" | "Executado";
-type Task = { id: number; title: string; company: "ITP" | "Locabox"; category: string; due: string; owner: string; value: number; status: Status; priority: "Alta" | "Média" | "Baixa"; listId: string; taskType: "Tarefa" | "Aprovação" | "Financeiro" };
+type Task = { id: string | number; title: string; company: "ITP" | "Locabox"; category: string; due: string; owner: string; value: number; status: Status; priority: "Alta" | "Média" | "Baixa"; listId: string; taskType: "Tarefa" | "Aprovação" | "Financeiro" };
 type CreateTarget = "canal" | "mensagem" | "departamento" | "pasta" | "lista";
 type WorkspaceList = { id: string; name: string };
 type DepartmentFolder = { id: string; name: string; lists: WorkspaceList[] };
@@ -79,6 +79,7 @@ function Workspace() {
   ]);
   const [taskView, setTaskView] = useState<"Lista" | "Quadro" | "Calendário" | "Gantt">("Lista");
   const [detailTask, setDetailTask] = useState<Task | null>(null);
+  const [usesRemoteTasks, setUsesRemoteTasks] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -95,29 +96,47 @@ function Workspace() {
         setSelectedListId(null);
         setExpandedDepartment(remoteDepartments[0].name);
         setExpandedFolders([]);
-        setNotice("Estrutura de trabalho compartilhada carregada.");
+        return loadFinancialTasks().then((remoteTasks) => {
+          if (!active || remoteTasks === null) return;
+          setTasks(remoteTasks);
+          setUsesRemoteTasks(true);
+          setNotice("Estrutura e atividades compartilhadas carregadas.");
+        });
       })
       .catch(() => {
         if (active) setNotice("Não foi possível carregar a estrutura compartilhada. Mantivemos o modo demonstrativo local.");
       });
 
     return () => { active = false; };
-  }, [setActiveDepartment, setDepartmentFolders, setDepartments, setExpandedDepartment, setExpandedFolders]);
+  }, [setActiveDepartment, setDepartmentFolders, setDepartments, setExpandedDepartment, setExpandedFolders, setTasks]);
   const allLists = useMemo(() => Object.entries(departmentFolders).flatMap(([department, folders]) => folders.flatMap((folder) => folder.lists.map((rawList) => ({ ...asWorkspaceList(rawList, department, folder.id), department, folder: folder.name })))), [departmentFolders]);
   const selectedList = allLists.find((list) => list.id === selectedListId);
   const visibleTasks = useMemo(() => tasks.filter((task) => (filter === "Todos" || task.status === filter) && task.title.toLowerCase().includes(search.toLowerCase()) && (!selectedListId || (task.listId || "financeiro-pagamentos") === selectedListId)), [tasks, filter, search, selectedListId]);
   const approvalTasks = tasks.filter((task) => task.status === "Em aprovação");
 
-  const updateStatus = (id: number, status: Status) => {
+  const updateStatus = async (id: Task["id"], status: Status) => {
+    if (usesRemoteTasks && typeof id === "string") {
+      try { await updateFinancialTaskStatus(id, status); }
+      catch { setNotice("Não foi possível atualizar a atividade compartilhada."); return; }
+    }
     setTasks((current) => current.map((task) => task.id === id ? { ...task, status } : task));
     setNotice(status === "Aprovado" ? "Solicitação aprovada e registrada no histórico." : "Solicitação devolvida para ajuste.");
     window.setTimeout(() => setNotice(""), 3600);
   };
 
-  const createTask = (form: HTMLFormElement) => {
+  const createTask = async (form: HTMLFormElement) => {
     const data = new FormData(form);
     const task: Task = { id: Date.now(), title: String(data.get("title")), company: String(data.get("company")) as Task["company"], category: String(data.get("category")), due: String(data.get("due")), owner: String(data.get("owner")), value: Number(data.get("value")), priority: "Média", status: "Pendente", listId: String(data.get("listId")), taskType: String(data.get("taskType")) as Task["taskType"] };
-    setTasks((current) => [task, ...current]); setSelectedListId(task.listId); setShowModal(false); setNotice("Tarefa criada na lista selecionada."); window.setTimeout(() => setNotice(""), 3600);
+    if (usesRemoteTasks) {
+      try {
+        const remoteTask = await createFinancialTask(task);
+        setTasks((current) => [remoteTask, ...current]);
+      } catch (error) {
+        setNotice(error instanceof Error ? error.message : "Não foi possível criar a atividade compartilhada.");
+        return;
+      }
+    } else setTasks((current) => [task, ...current]);
+    setSelectedListId(task.listId); setShowModal(false); setNotice("Tarefa criada na lista selecionada."); window.setTimeout(() => setNotice(""), 3600);
   };
 
   const sendChannelMessage = (event: React.FormEvent<HTMLFormElement>) => {
@@ -214,7 +233,7 @@ function Workspace() {
       </section>}
       </div>
     </section>
-    {showModal && <div className="modal-backdrop" role="presentation"><form className="modal" onSubmit={(event) => { event.preventDefault(); createTask(event.currentTarget); }}><div className="modal-heading"><div><p className="eyebrow">NOVA TAREFA</p><h2>Criar a partir de uma lista</h2></div><button type="button" className="close" onClick={() => setShowModal(false)}>×</button></div><div className="modal-tabs"><button type="button" className="selected">Em branco</button><button type="button" onClick={() => { setSection("Templates"); setShowModal(false); }}>A partir de template</button></div><label>Lista<select name="listId" defaultValue={selectedListId ?? allLists[0]?.id} required>{allLists.map((list) => <option value={list.id} key={list.id}>{list.department} / {list.folder} / {list.name}</option>)}</select></label><label>Título<input name="title" required placeholder="Ex.: Conferir pagamento de fornecedor" /></label><div className="form-row"><label>Tipo<select name="taskType" defaultValue="Tarefa"><option>Tarefa</option><option>Aprovação</option><option>Financeiro</option></select></label><label>Responsável<select name="owner" defaultValue="Marina"><option>Marina</option><option>Carlos</option><option>Ana</option></select></label></div><div className="form-row"><label>Vencimento<input name="due" required placeholder="Ex.: 08 ago" /></label><label>Valor previsto<input name="value" type="number" min="0" step="0.01" defaultValue="0" /></label></div><div className="form-row"><label>Empresa<select name="company" defaultValue="ITP"><option>ITP</option><option>Locabox</option></select></label><label>Categoria<select name="category" defaultValue="Fornecedores"><option>Fornecedores</option><option>Obras</option><option>Locações</option><option>Despesas</option><option>Documentos</option></select></label></div><div className="modal-actions"><button type="button" className="secondary-button" onClick={() => setShowModal(false)}>Cancelar</button><button className="primary-button" type="submit">Criar tarefa</button></div></form></div>}
+      {showModal && <div className="modal-backdrop" role="presentation"><form className="modal" onSubmit={(event) => { event.preventDefault(); void createTask(event.currentTarget); }}><div className="modal-heading"><div><p className="eyebrow">NOVA TAREFA</p><h2>Criar a partir de uma lista</h2></div><button type="button" className="close" onClick={() => setShowModal(false)}>×</button></div><div className="modal-tabs"><button type="button" className="selected">Em branco</button><button type="button" onClick={() => { setSection("Templates"); setShowModal(false); }}>A partir de template</button></div><label>Lista<select name="listId" defaultValue={selectedListId ?? allLists[0]?.id} required>{allLists.map((list) => <option value={list.id} key={list.id}>{list.department} / {list.folder} / {list.name}</option>)}</select></label><label>Título<input name="title" required placeholder="Ex.: Conferir pagamento de fornecedor" /></label><div className="form-row"><label>Tipo<select name="taskType" defaultValue="Tarefa"><option>Tarefa</option><option>Aprovação</option><option>Financeiro</option></select></label><label>Responsável<select name="owner" defaultValue="Marina"><option>Marina</option><option>Carlos</option><option>Ana</option></select></label></div><div className="form-row"><label>Vencimento<input name="due" type={usesRemoteTasks ? "date" : undefined} required placeholder="Ex.: 08 ago" /></label><label>Valor previsto<input name="value" type="number" min="0" step="0.01" defaultValue="0" /></label></div><div className="form-row"><label>Empresa<select name="company" defaultValue="ITP"><option>ITP</option><option>Locabox</option></select></label><label>Categoria<select name="category" defaultValue="Fornecedores"><option>Fornecedores</option><option>Obras</option><option>Locações</option><option>Despesas</option><option>Documentos</option></select></label></div><div className="modal-actions"><button type="button" className="secondary-button" onClick={() => setShowModal(false)}>Cancelar</button><button className="primary-button" type="submit">Criar tarefa</button></div></form></div>}
     {createTarget && <div className="modal-backdrop" role="presentation"><form className="modal compact-modal" onSubmit={createWorkspaceEntity}><div className="modal-heading"><div><p className="eyebrow">{createTarget === "mensagem" ? "MENSAGEM DIRETA" : createTarget.toUpperCase()}</p><h2>{createTarget === "canal" ? "Criar canal" : createTarget === "mensagem" ? "Nova mensagem direta" : createTarget === "departamento" ? "Criar departamento" : createTarget === "pasta" ? `Criar pasta em ${activeDepartment}` : `Criar lista em ${activeDepartment}`}</h2></div><button type="button" className="close" onClick={() => { setCreateTarget(null); setNewEntityName(""); }}>×</button></div><label>{createTarget === "mensagem" ? "Pessoa" : "Nome"}<input autoFocus required value={newEntityName} onChange={(event) => setNewEntityName(event.target.value)} placeholder={createTarget === "canal" ? "Ex.: pagamentos" : createTarget === "mensagem" ? "Ex.: Ana Souza" : createTarget === "pasta" ? "Ex.: Conciliações" : createTarget === "lista" ? "Ex.: Conferência de notas" : "Ex.: Manutenção"}/></label><div className="modal-actions"><button type="button" className="secondary-button" onClick={() => setCreateTarget(null)}>Cancelar</button><button className="primary-button" type="submit">Criar</button></div></form></div>}
     {entityMenu && <div className="modal-backdrop" role="presentation"><section className="entity-menu" role="dialog"><button onClick={() => renameEntity(entityMenu)}>Renomear</button>{entityMenu.kind === "departamento" && <button onClick={() => { setDepartmentStatus((current) => ({ ...current, [entityMenu.department]: current[entityMenu.department] === "Em pausa" ? "Ativo" : "Em pausa" })); setNotice("Status do departamento atualizado."); setEntityMenu(null); }}>Editar status <small>{departmentStatus[entityMenu.department] ?? "Ativo"}</small></button>}<button onClick={() => { setTemplates((current) => [...current, { id: Date.now(), name: entityMenu.kind === "departamento" ? entityMenu.department : departmentFolders[entityMenu.department]?.find((folder) => folder.id === entityMenu.folderId)?.name ?? "Novo template", category: entityMenu.kind === "departamento" ? "Departamento" : "Pasta", description: "Template salvo a partir da árvore de trabalho." }]); setNotice("Item salvo como template."); setEntityMenu(null); }}>Salvar como template</button><button onClick={() => { setShareTarget(entityMenu); setEntityMenu(null); }}>Compartilhamento e permissões</button><button className="danger" onClick={() => deleteEntity(entityMenu)}>Excluir</button><button className="menu-cancel" onClick={() => setEntityMenu(null)}>Cancelar</button></section></div>}
     {shareTarget && <div className="modal-backdrop" role="presentation"><form className="modal compact-modal" onSubmit={(event) => { event.preventDefault(); setShareTarget(null); setNotice("Permissões atualizadas neste navegador."); }}><div className="modal-heading"><div><p className="eyebrow">COMPARTILHAMENTO</p><h2>Permissões</h2></div><button type="button" className="close" onClick={() => setShareTarget(null)}>×</button></div><label>Acesso<select defaultValue="departamento"><option value="departamento">Membros do departamento</option><option value="restrito">Somente pessoas convidadas</option></select></label><label>Convidar por nome ou e-mail<input placeholder="Ex.: ana@itplocabox.com.br" /></label><div className="modal-actions"><button className="primary-button" type="submit">Salvar permissões</button></div></form></div>}
