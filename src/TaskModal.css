@@ -1,0 +1,6 @@
+.modal-tabs{display:flex;gap:5px;margin:18px 0 2px;padding:4px;background:#f1f5f2;border-radius:6px}.modal-tabs button{flex:1;border:0;background:transparent;color:#66736c;border-radius:4px;padding:8px;font-size:12px;font-weight:700}.modal-tabs button.selected{background:#fff;color:#176b4e;box-shadow:0 1px 2px #13221418}
+.task-detail { width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; padding: 26px; border-radius: 18px; background: #fff; }
+.task-detail header { display: flex; justify-content: space-between; gap: 16px; }
+.task-detail h2 { margin: 4px 0 8px; }.task-detail h3 { margin: 24px 0 10px; }
+.detail-meta { display: flex; gap: 28px; padding: 14px 0; border-block: 1px solid #e6ece8; color: #53645d; }.detail-meta span { display: grid; gap: 3px; }.detail-meta b { color: #18382d; }
+.subtask { display: flex; gap: 8px; margin: 8px 0; }.inline-form { display: flex; gap: 8px; margin-top: 10px; }.inline-form input { flex: 1; min-width: 0; padding: 9px; border: 1px solid #cbd5d1; border-radius: 8px; }.comment { padding: 10px; background: #f4f8f6; border-radius: 8px; }
