@@ -16,7 +16,7 @@ import { AuthGate } from "./AuthGate";
 import { AdminUsers } from "./AdminUsers";
 import { CompaniesManagement } from "./CompaniesManagement";
 import { TaskDetail } from "./TaskDetail";
-import { createFinancialTask, createWorkspaceDepartment, createWorkspaceFolder, createWorkspaceList, decideFinancialApproval, loadFinancialTasks, loadWorkspaceHierarchy } from "./workspaceRepository";
+import { createChannelMessage, createFinancialTask, createWorkspaceChannel, createWorkspaceDepartment, createWorkspaceFolder, createWorkspaceList, decideFinancialApproval, loadChannelMessages, loadFinancialTasks, loadWorkspaceChannels, loadWorkspaceHierarchy } from "./workspaceRepository";
 import { supabase } from "./supabaseClient";
 
 type Status = "Pendente" | "Em aprovação" | "Aprovado" | "Executado";
@@ -61,6 +61,8 @@ function Workspace() {
   const [channelMessage, setChannelMessage] = useState("");
   const [channelOpen, setChannelOpen] = useState(false);
   const [channelName, setChannelName] = useState("Geral");
+  const [remoteChannels, setRemoteChannels] = useState<{ id: string; name: string }[]>([]);
+  const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [templates, setTemplates] = usePersistentState<TaskTemplate[]>("itp-financeiro-templates", []);
   const [inboxItems, setInboxItems] = usePersistentState<InboxItem[]>("itp-financeiro-inbox", [
     { id: 1, kind: "Tarefa", title: "Aprovar pagamento de fornecedor", detail: "Financeiro · vence hoje", time: "há 8 min", priority: true, read: false },
@@ -130,6 +132,14 @@ function Workspace() {
     }).subscribe();
     return () => { void client.removeChannel(channel); };
   }, [setTasks, usesRemoteTasks]);
+  useEffect(() => {
+    if (!usesRemoteTasks) return;
+    void loadWorkspaceChannels().then((items) => { if (items?.length) { setRemoteChannels(items); setChannels(items.map((item) => item.name)); setChannelName(items[0].name); setActiveChannelId(items[0].id); } }).catch(() => setNotice("Não foi possível carregar os canais compartilhados."));
+  }, [setChannels, usesRemoteTasks]);
+  useEffect(() => {
+    if (!usesRemoteTasks || !activeChannelId) return;
+    void loadChannelMessages(activeChannelId).then((items) => setMessages(items.map((item) => ({ author: item.author, initials: "EQ", time: "", text: item.content })))).catch(() => setNotice("Não foi possível carregar as mensagens do canal."));
+  }, [activeChannelId, setMessages, usesRemoteTasks]);
   const allLists = useMemo(() => Object.entries(departmentFolders).flatMap(([department, folders]) => folders.flatMap((folder) => folder.lists.map((rawList) => ({ ...asWorkspaceList(rawList, department, folder.id), department, folder: folder.name })))), [departmentFolders]);
   const selectedList = allLists.find((list) => list.id === selectedListId);
   const visibleTasks = useMemo(() => tasks.filter((task) => (filter === "Todos" || task.status === filter) && task.title.toLowerCase().includes(search.toLowerCase()) && (!selectedListId || (task.listId || "financeiro-pagamentos") === selectedListId)), [tasks, filter, search, selectedListId]);
@@ -167,9 +177,10 @@ function Workspace() {
     setSelectedListId(task.listId); setShowModal(false); setNotice("Tarefa criada na lista selecionada."); window.setTimeout(() => setNotice(""), 3600);
   };
 
-  const sendChannelMessage = (event: React.FormEvent<HTMLFormElement>) => {
+  const sendChannelMessage = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!channelMessage.trim()) return;
+    if (usesRemoteTasks && activeChannelId) { try { await createChannelMessage(activeChannelId, channelMessage.trim()); } catch { setNotice("Não foi possível enviar a mensagem compartilhada."); return; } }
     setMessages((current) => [...current, { author: "Marina Alves", initials: "MA", time: "agora", text: channelMessage.trim() }]);
     setChannelMessage("");
     setNotice("Mensagem enviada ao canal # pagamentos-e-aprovacoes.");
@@ -179,6 +190,11 @@ function Workspace() {
     event.preventDefault();
     const name = newEntityName.trim();
     if (!name || !createTarget) return;
+    if (createTarget === "canal" && usesRemoteTasks) {
+      try { const channel = await createWorkspaceChannel(name); setRemoteChannels((current) => [...current, channel]); setChannels((current) => [...current, channel.name]); setChannelName(channel.name); setActiveChannelId(channel.id); setChannelOpen(true); setSection("Canais"); }
+      catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível criar o canal compartilhado."); return; }
+      setNotice("Canal criado para a equipe."); setNewEntityName(""); setCreateTarget(null); return;
+    }
     if (["departamento", "pasta", "lista"].includes(createTarget) && usesRemoteTasks) {
       try {
         if (createTarget === "departamento") await createWorkspaceDepartment(name);
@@ -239,7 +255,7 @@ function Workspace() {
       </nav>
       <div className="channel-nav">
         <div className="sidebar-group-title"><p>CANAIS</p><button aria-label="Adicionar canal" onClick={() => setCreateTarget("canal")}>+</button></div>
-        {channels.map((channel) => <button key={channel} className={channelOpen && channelName === channel ? "nav-link active" : "nav-link"} onClick={() => { setChannelName(channel); setChannelOpen(true); setSection("Canais"); }}><Hash size={18} />{channel}</button>)}
+        {channels.map((channel) => <button key={channel} className={channelOpen && channelName === channel ? "nav-link active" : "nav-link"} onClick={() => { setChannelName(channel); setActiveChannelId(remoteChannels.find((item) => item.name === channel)?.id ?? null); setChannelOpen(true); setSection("Canais"); }}><Hash size={18} />{channel}</button>)}
         <button className="sidebar-add" onClick={() => setCreateTarget("canal")}>+ Adicionar canal</button>
         <div className="sidebar-group-title"><p>MENSAGENS DIRETAS</p><button aria-label="Nova mensagem direta" onClick={() => setCreateTarget("mensagem")}>+</button></div>
         {directMessages.map((person) => <button key={person} className={channelOpen && channelName === person ? "nav-link active" : "nav-link"} onClick={() => { setChannelName(person); setChannelOpen(true); setSection("Canais"); }}><MessageCircle size={18} />{person}</button>)}

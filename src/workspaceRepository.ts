@@ -9,6 +9,8 @@ export type CreateRemoteTask = Omit<RemoteTask, "id">;
 export type RemoteSubtask = { id: string; title: string; done: boolean };
 export type RemoteComment = { id: string; content: string; author: string };
 export type RemoteAttachment = { id: string; name: string; path: string; mimeType: string | null; size: number | null };
+export type RemoteChannel = { id: string; name: string };
+export type RemoteChannelMessage = { id: string; content: string; author: string };
 
 const statusFromDatabase: Record<string, RemoteTaskStatus> = { rascunho: "Pendente", pendente: "Pendente", em_aprovacao: "Em aprovação", aprovado: "Aprovado", executado: "Executado", cancelado: "Pendente" };
 const statusToDatabase: Record<RemoteTaskStatus, string> = { Pendente: "pendente", "Em aprovação": "em_aprovacao", Aprovado: "aprovado", Executado: "executado" };
@@ -58,6 +60,37 @@ export async function createWorkspaceList(folderId: string, name: string): Promi
   if (!supabase) throw new Error("Supabase não está configurado.");
   const userId = await getCurrentUserId();
   const { error } = await supabase.from("listas_trabalho").insert({ pasta_id: folderId, nome: name, criado_por: userId });
+  if (error) throw error;
+}
+
+export async function loadWorkspaceChannels(): Promise<RemoteChannel[] | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.from("canais").select("id,nome").order("created_at");
+  if (error) throw error;
+  return (data ?? []).map((channel) => ({ id: channel.id, name: channel.nome }));
+}
+
+export async function createWorkspaceChannel(name: string): Promise<RemoteChannel> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const userId = await getCurrentUserId();
+  const { data, error } = await supabase.from("canais").insert({ nome: name, tipo: "geral", privado: false, criado_por: userId }).select("id,nome").single();
+  if (error) throw error;
+  const { error: memberError } = await supabase.from("canal_membros").insert({ canal_id: data.id, usuario_id: userId });
+  if (memberError) throw memberError;
+  return { id: data.id, name: data.nome };
+}
+
+export async function loadChannelMessages(channelId: string): Promise<RemoteChannelMessage[]> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const { data, error } = await supabase.from("mensagens_canal").select("id,conteudo,autor_id").eq("canal_id", channelId).order("created_at");
+  if (error) throw error;
+  return (data ?? []).map((message) => ({ id: message.id, content: message.conteudo, author: message.autor_id ? "Membro da equipe" : "Equipe" }));
+}
+
+export async function createChannelMessage(channelId: string, content: string): Promise<void> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const userId = await getCurrentUserId();
+  const { error } = await supabase.from("mensagens_canal").insert({ canal_id: channelId, autor_id: userId, conteudo: content });
   if (error) throw error;
 }
 
