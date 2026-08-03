@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Bell, Building2, CalendarDays, Check, ChevronDown, ChevronRight, CirclePlus, ClipboardList, Clock3, FileText, Folder, Hash, LayoutDashboard, List, MessageCircle, MoreHorizontal, Search, Send, Settings, ShieldCheck, Users } from "lucide-react";
 import "./App.css";
 import "./Channel.css";
@@ -14,13 +14,14 @@ import "./TaskModal.css";
 import { usePersistentState } from "./usePersistentState";
 import { AuthGate } from "./AuthGate";
 import { TaskDetail } from "./TaskDetail";
+import { loadWorkspaceHierarchy } from "./workspaceRepository";
 
 type Status = "Pendente" | "Em aprovação" | "Aprovado" | "Executado";
 type Task = { id: number; title: string; company: "ITP" | "Locabox"; category: string; due: string; owner: string; value: number; status: Status; priority: "Alta" | "Média" | "Baixa"; listId: string; taskType: "Tarefa" | "Aprovação" | "Financeiro" };
 type CreateTarget = "canal" | "mensagem" | "departamento" | "pasta" | "lista";
 type WorkspaceList = { id: string; name: string };
-type DepartmentFolder = { id: number; name: string; lists: WorkspaceList[] };
-type EntityMenu = { kind: "departamento" | "pasta"; department: string; folderId?: number };
+type DepartmentFolder = { id: string; name: string; lists: WorkspaceList[] };
+type EntityMenu = { kind: "departamento" | "pasta"; department: string; folderId?: string };
 
 const initialTasks: Task[] = [
   { id: 1, title: "Aprovar pagamento de fornecedor", company: "ITP", category: "Fornecedores", due: "Hoje", owner: "Marina", value: 28450, status: "Em aprovação", priority: "Alta", listId: "financeiro-pagamentos", taskType: "Aprovação" },
@@ -30,8 +31,14 @@ const initialTasks: Task[] = [
   { id: 5, title: "Arquivar comprovantes de julho", company: "ITP", category: "Documentos", due: "08 ago", owner: "Carlos", value: 0, status: "Executado", priority: "Baixa", listId: "financeiro-pagamentos", taskType: "Tarefa" },
 ];
 
+const localDepartmentFolders: Record<string, DepartmentFolder[]> = {
+  Financeiro: [{ id: "local-financeiro-rotinas", name: "Rotinas", lists: [{ id: "financeiro-pagamentos", name: "Pagamentos e aprovações" }, { id: "financeiro-receber", name: "Contas a receber" }] }],
+  Operações: [{ id: "local-operacoes-processos", name: "Processos", lists: [{ id: "operacoes-acompanhamento", name: "Acompanhamento operacional" }] }],
+  Engenharia: [{ id: "local-engenharia-obras", name: "Obras", lists: [{ id: "engenharia-medicoes", name: "Medições" }] }],
+};
+
 const money = (value: number) => value ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "-";
-const asWorkspaceList = (rawList: WorkspaceList | string, department: string, folderId: number): WorkspaceList => typeof rawList === "string" ? { id: `${department}-${folderId}-${rawList}`, name: rawList } : rawList;
+const asWorkspaceList = (rawList: WorkspaceList | string, department: string, folderId: string): WorkspaceList => typeof rawList === "string" ? { id: `${department}-${folderId}-${rawList}`, name: rawList } : rawList;
 
 function Workspace() {
   const [tasks, setTasks] = usePersistentState("itp-financeiro-tasks", initialTasks);
@@ -56,15 +63,11 @@ function Workspace() {
   const [directMessages, setDirectMessages] = usePersistentState("itp-financeiro-direct-messages", ["Carlos Mendes"]);
   const [departments, setDepartments] = usePersistentState("itp-financeiro-departments", ["Financeiro", "Operações", "Engenharia"]);
   const [activeDepartment, setActiveDepartment] = usePersistentState("itp-financeiro-active-department", "Financeiro");
-  const [departmentFolders, setDepartmentFolders] = usePersistentState<Record<string, DepartmentFolder[]>>("itp-financeiro-folders", {
-    Financeiro: [{ id: 1, name: "Rotinas", lists: [{ id: "financeiro-pagamentos", name: "Pagamentos e aprovações" }, { id: "financeiro-receber", name: "Contas a receber" }] }],
-    Operações: [{ id: 2, name: "Processos", lists: [{ id: "operacoes-acompanhamento", name: "Acompanhamento operacional" }] }],
-    Engenharia: [{ id: 3, name: "Obras", lists: [{ id: "engenharia-medicoes", name: "Medições" }] }],
-  });
-  const [selectedFolderId, setSelectedFolderId] = useState<number | null>(1);
+  const [departmentFolders, setDepartmentFolders] = usePersistentState<Record<string, DepartmentFolder[]>>("itp-financeiro-folders", localDepartmentFolders);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>("local-financeiro-rotinas");
   const [selectedListId, setSelectedListId] = useState<string | null>("financeiro-pagamentos");
   const [expandedDepartment, setExpandedDepartment] = usePersistentState<string | null>("itp-financeiro-expanded-department", "Financeiro");
-  const [expandedFolders, setExpandedFolders] = usePersistentState<number[]>("itp-financeiro-expanded-folders", [1]);
+  const [expandedFolders, setExpandedFolders] = usePersistentState<string[]>("itp-financeiro-expanded-folders", ["local-financeiro-rotinas"]);
   const [departmentStatus, setDepartmentStatus] = usePersistentState<Record<string, "Ativo" | "Em pausa">>("itp-financeiro-department-status", {});
   const [entityMenu, setEntityMenu] = useState<EntityMenu | null>(null);
   const [shareTarget, setShareTarget] = useState<EntityMenu | null>(null);
@@ -76,6 +79,30 @@ function Workspace() {
   ]);
   const [taskView, setTaskView] = useState<"Lista" | "Quadro" | "Calendário" | "Gantt">("Lista");
   const [detailTask, setDetailTask] = useState<Task | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    void loadWorkspaceHierarchy()
+      .then((remoteDepartments) => {
+        if (!active || !remoteDepartments?.length) return;
+
+        const remoteFolders = Object.fromEntries(remoteDepartments.map((department) => [department.name, department.folders]));
+        setDepartments(remoteDepartments.map((department) => department.name));
+        setDepartmentFolders(remoteFolders);
+        setActiveDepartment(remoteDepartments[0].name);
+        setSelectedFolderId(null);
+        setSelectedListId(null);
+        setExpandedDepartment(remoteDepartments[0].name);
+        setExpandedFolders([]);
+        setNotice("Estrutura de trabalho compartilhada carregada.");
+      })
+      .catch(() => {
+        if (active) setNotice("Não foi possível carregar a estrutura compartilhada. Mantivemos o modo demonstrativo local.");
+      });
+
+    return () => { active = false; };
+  }, [setActiveDepartment, setDepartmentFolders, setDepartments, setExpandedDepartment, setExpandedFolders]);
   const allLists = useMemo(() => Object.entries(departmentFolders).flatMap(([department, folders]) => folders.flatMap((folder) => folder.lists.map((rawList) => ({ ...asWorkspaceList(rawList, department, folder.id), department, folder: folder.name })))), [departmentFolders]);
   const selectedList = allLists.find((list) => list.id === selectedListId);
   const visibleTasks = useMemo(() => tasks.filter((task) => (filter === "Todos" || task.status === filter) && task.title.toLowerCase().includes(search.toLowerCase()) && (!selectedListId || (task.listId || "financeiro-pagamentos") === selectedListId)), [tasks, filter, search, selectedListId]);
@@ -108,7 +135,7 @@ function Workspace() {
     if (createTarget === "canal") { setChannels((current) => [...current, name]); setChannelName(name); setChannelOpen(true); setSection("Canais"); }
     if (createTarget === "mensagem") { setDirectMessages((current) => [...current, name]); setChannelName(name); setChannelOpen(true); setSection("Canais"); }
     if (createTarget === "departamento") { setDepartments((current) => [...current, name]); setDepartmentFolders((current) => ({ ...current, [name]: [] })); setActiveDepartment(name); setChannelOpen(false); setSection("Visão geral"); }
-    if (createTarget === "pasta") { const folder = { id: Date.now(), name, lists: [] }; setDepartmentFolders((current) => ({ ...current, [activeDepartment]: [...(current[activeDepartment] ?? []), folder] })); setSelectedFolderId(folder.id); }
+    if (createTarget === "pasta") { const folder: DepartmentFolder = { id: `local-folder-${Date.now()}`, name, lists: [] }; setDepartmentFolders((current) => ({ ...current, [activeDepartment]: [...(current[activeDepartment] ?? []), folder] })); setSelectedFolderId(folder.id); }
     if (createTarget === "lista") { const list = { id: `lista-${Date.now()}`, name }; setDepartmentFolders((current) => ({ ...current, [activeDepartment]: (current[activeDepartment] ?? []).map((folder, index) => folder.id === selectedFolderId || (!selectedFolderId && index === 0) ? { ...folder, lists: [...folder.lists, list] } : folder) })); setSelectedListId(list.id); }
     const targetLabel = createTarget === "mensagem" ? "Mensagem direta" : createTarget === "pasta" ? "Pasta" : createTarget === "lista" ? "Lista" : createTarget[0].toUpperCase() + createTarget.slice(1);
     setNotice(`${targetLabel} criado(a) com sucesso.`);

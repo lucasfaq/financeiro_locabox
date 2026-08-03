@@ -23,7 +23,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [x] Persistência local por navegador com `localStorage`.
 - [x] Interface responsiva inicial e identidade ITP/Locabox.
 - [x] Lint e build aprovados.
-- [-] Cliente Supabase e migrations iniciais aplicados; integração da interface ainda pendente.
+- [-] Cliente Supabase, migrations e carregamento autenticado da hierarquia (departamentos, pastas e listas) aplicados; tarefas e demais módulos ainda usam o fallback local.
 - [x] Projeto Supabase de teste escolhido e conectado (`qeeqtbjwkppahjaaqekp`).
 - [ ] Auth, RLS, Realtime e Storage validados em ambiente de teste.
 - [ ] Observabilidade, tratamento de erros, auditoria e backups.
@@ -31,7 +31,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 
 ## 2. Organização do trabalho
 
-- [x] Departamentos, pastas e listas locais.
+- [-] Departamentos, pastas e listas carregam do Supabase para sessões autenticadas, com fallback local de demonstração.
 - [x] Árvore expansível Departamento → Pasta → Lista.
 - [x] Criar, renomear e excluir departamento/pasta localmente.
 - [x] Criar listas com ID persistente.
