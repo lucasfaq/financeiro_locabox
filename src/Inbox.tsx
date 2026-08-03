@@ -1,8 +1,8 @@
 import { CheckCheck, Clock3, MessageCircle, SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
 
-export type InboxItem = { id: number; kind: "Tarefa" | "Mensagem"; title: string; detail: string; time: string; priority: boolean; read: boolean };
-type Props = { items: InboxItem[]; onMarkRead: (id: number) => void; onClearRead: () => void };
+export type InboxItem = { id: string | number; kind: "Tarefa" | "Mensagem"; title: string; detail: string; time: string; priority: boolean; read: boolean };
+type Props = { items: InboxItem[]; onMarkRead: (id: InboxItem["id"]) => void; onClearRead: () => void };
 
 export function Inbox({ items, onMarkRead, onClearRead }: Props) {
   const [tab, setTab] = useState<"Todas" | "Principais" | "Outras" | "Mais tarde" | "Limpos">("Todas");

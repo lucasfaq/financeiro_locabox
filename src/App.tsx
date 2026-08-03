@@ -17,7 +17,7 @@ import { AdminUsers } from "./AdminUsers";
 import { CompaniesManagement } from "./CompaniesManagement";
 import { OrganizationAssignments } from "./OrganizationAssignments";
 import { TaskDetail } from "./TaskDetail";
-import { createChannelMessage, createFinancialTask, createWorkspaceChannel, createWorkspaceDepartment, createWorkspaceFolder, createWorkspaceList, decideFinancialApproval, loadChannelMessages, loadFinancialTasks, loadWorkspaceChannels, loadWorkspaceHierarchy } from "./workspaceRepository";
+import { clearReadNotifications, createChannelMessage, createFinancialTask, createWorkspaceChannel, createWorkspaceDepartment, createWorkspaceFolder, createWorkspaceList, decideFinancialApproval, loadChannelMessages, loadFinancialTasks, loadNotifications, loadWorkspaceChannels, loadWorkspaceHierarchy, markNotificationRead } from "./workspaceRepository";
 import { supabase } from "./supabaseClient";
 
 type Status = "Pendente" | "Em aprovação" | "Aprovado" | "Executado";
@@ -141,6 +141,10 @@ function Workspace() {
     if (!usesRemoteTasks || !activeChannelId) return;
     void loadChannelMessages(activeChannelId).then((items) => setMessages(items.map((item) => ({ author: item.author, initials: "EQ", time: "", text: item.content })))).catch(() => setNotice("Não foi possível carregar as mensagens do canal."));
   }, [activeChannelId, setMessages, usesRemoteTasks]);
+  useEffect(() => {
+    if (!usesRemoteTasks) return;
+    void loadNotifications().then((items) => { if (items) setInboxItems(items); }).catch(() => setNotice("Não foi possível carregar sua Caixa de Entrada."));
+  }, [setInboxItems, usesRemoteTasks]);
   useEffect(() => {
     const client = supabase;
     if (!client || !usesRemoteTasks || !activeChannelId) return;
@@ -279,7 +283,7 @@ function Workspace() {
       <header><div><p className="eyebrow">{selectedList ? `${selectedList.department.toUpperCase()} / ${selectedList.folder.toUpperCase()}` : `${activeDepartment.toUpperCase()} / AGOSTO 2026`}</p><h1>{selectedList ? selectedList.name : section}</h1></div><div className="header-actions"><button className="icon-button" aria-label="Notificações"><Bell size={19} /><i /></button><button className="primary-button" onClick={() => setShowModal(true)}><CirclePlus size={18} />Nova tarefa</button></div></header>
       {notice && <div className="notice"><Check size={17} />{notice}</div>}
       {section === "Templates" && <TemplatesLibrary templates={templates} onSaveCurrent={() => { setTemplates((current) => [...current, { id: Date.now(), name: "Rotina de pagamentos", category: "Processo financeiro", description: "Lista, responsáveis e campos financeiros reutilizáveis." }]); setNotice("Visão salva como template do departamento."); }} onUse={(template) => { setShowModal(true); setNotice(`Use o template “${template.name}” para criar a próxima tarefa.`); }} />}
-      {section === "Caixa de Entrada" && <Inbox items={inboxItems} onMarkRead={(id) => setInboxItems((current) => current.map((item) => item.id === id ? { ...item, read: true } : item))} onClearRead={() => setInboxItems((current) => current.filter((item) => !item.read))} />}
+      {section === "Caixa de Entrada" && <Inbox items={inboxItems} onMarkRead={(id) => { if (usesRemoteTasks && typeof id === "string") void markNotificationRead(id).catch(() => setNotice("Não foi possível marcar a notificação como lida.")); setInboxItems((current) => current.map((item) => item.id === id ? { ...item, read: true } : item)); }} onClearRead={() => { if (usesRemoteTasks) void clearReadNotifications().catch(() => setNotice("Não foi possível limpar notificações lidas.")); setInboxItems((current) => current.filter((item) => !item.read)); }} />}
       {section === "Documentos" && <DocumentsWorkspace documents={documents} onCreate={() => setDocuments((current) => [...current, { id: Date.now(), title: "Sem título", body: "", updated: "agora" }])} onUpdate={(id, patch) => setDocuments((current) => current.map((document) => document.id === id ? { ...document, ...patch } : document))} />}
       {section === "Equipe" && <><AdminUsers /><OrganizationAssignments /></>}
       {section === "Empresas" && <CompaniesManagement />}

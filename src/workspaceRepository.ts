@@ -11,6 +11,7 @@ export type RemoteComment = { id: string; content: string; author: string };
 export type RemoteAttachment = { id: string; name: string; path: string; mimeType: string | null; size: number | null };
 export type RemoteChannel = { id: string; name: string };
 export type RemoteChannelMessage = { id: string; content: string; author: string };
+export type RemoteNotification = { id: string; kind: "Tarefa" | "Mensagem"; title: string; detail: string; time: string; priority: boolean; read: boolean };
 
 const statusFromDatabase: Record<string, RemoteTaskStatus> = { rascunho: "Pendente", pendente: "Pendente", em_aprovacao: "Em aprovação", aprovado: "Aprovado", executado: "Executado", cancelado: "Pendente" };
 const statusToDatabase: Record<RemoteTaskStatus, string> = { Pendente: "pendente", "Em aprovação": "em_aprovacao", Aprovado: "aprovado", Executado: "executado" };
@@ -91,6 +92,26 @@ export async function createChannelMessage(channelId: string, content: string): 
   if (!supabase) throw new Error("Supabase não está configurado.");
   const userId = await getCurrentUserId();
   const { error } = await supabase.from("mensagens_canal").insert({ canal_id: channelId, autor_id: userId, conteudo: content });
+  if (error) throw error;
+}
+
+export async function loadNotifications(): Promise<RemoteNotification[] | null> {
+  if (!supabase) return null;
+  const userId = await getCurrentUserId();
+  const { data, error } = await supabase.from("notificacoes").select("id,tipo,titulo,detalhe,prioridade,lida_em,created_at").eq("destinatario_id", userId).order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((item) => ({ id: item.id, kind: item.tipo === "mensagem" ? "Mensagem" : "Tarefa", title: item.titulo, detail: item.detalhe ?? "", time: new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(item.created_at)), priority: item.prioridade, read: Boolean(item.lida_em) }));
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const { error } = await supabase.from("notificacoes").update({ lida_em: new Date().toISOString() }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function clearReadNotifications(): Promise<void> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const { error } = await supabase.from("notificacoes").delete().not("lida_em", "is", null);
   if (error) throw error;
 }
 

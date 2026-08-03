@@ -87,7 +87,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 
 ## 6. Caixa de entrada, busca e documentos
 
-- [x] Caixa de Entrada local com leitura e limpeza.
+- [-] Caixa de Entrada lê e marca notificações reais para sessões autenticadas; modo local permanece como contingência e falta geração automática de notificações de negócio.
 - [x] Biblioteca e editor simples de documentos locais.
 - [x] Templates locais para tarefa/processo/documento.
 - [-] Filtros de templates são visuais e a aplicação de template ainda não preenche a tarefa.
