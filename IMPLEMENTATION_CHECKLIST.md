@@ -103,7 +103,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [x] Cadastro e ativação/desativação de empresas.
 - [-] Gestão de equipe com criação, edição de papel, bloqueio e redefinição de senha; seleção visual de empresas e departamentos vinculados, protegida por RLS. Convites pendentes.
 - [ ] Configurações de status, tipos de tarefa, campos personalizados e SLA.
-- [ ] Matriz de permissão e revisão de acessos.
+- [-] Matriz de permissão aplicada por papel, empresa e departamento, incluindo detalhes e anexos de atividades; revisão de acessos e alçadas específicas pendentes.
 - [ ] Logs de atividade, exportação e retenção de dados.
 
 ## 8. Assistente de ChatGPT
