@@ -44,6 +44,23 @@ export async function createWorkspaceDepartment(name: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function createWorkspaceFolder(departmentName: string, name: string): Promise<void> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const userId = await getCurrentUserId();
+  const { data: department, error: departmentError } = await supabase.from("departamentos").select("id").eq("nome", departmentName).eq("ativo", true).maybeSingle();
+  if (departmentError) throw departmentError;
+  if (!department) throw new Error("Departamento não encontrado ou inativo.");
+  const { error } = await supabase.from("pastas_trabalho").insert({ departamento_id: department.id, nome: name, criado_por: userId });
+  if (error) throw error;
+}
+
+export async function createWorkspaceList(folderId: string, name: string): Promise<void> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const userId = await getCurrentUserId();
+  const { error } = await supabase.from("listas_trabalho").insert({ pasta_id: folderId, nome: name, criado_por: userId });
+  if (error) throw error;
+}
+
 export async function loadFinancialTasks(): Promise<RemoteTask[] | null> {
   if (!supabase) return null;
   const { data: companies, error: companyError } = await supabase.from("empresas").select("id,nome").eq("ativo", true);

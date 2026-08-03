@@ -16,7 +16,7 @@ import { AuthGate } from "./AuthGate";
 import { AdminUsers } from "./AdminUsers";
 import { CompaniesManagement } from "./CompaniesManagement";
 import { TaskDetail } from "./TaskDetail";
-import { createFinancialTask, createWorkspaceDepartment, decideFinancialApproval, loadFinancialTasks, loadWorkspaceHierarchy } from "./workspaceRepository";
+import { createFinancialTask, createWorkspaceDepartment, createWorkspaceFolder, createWorkspaceList, decideFinancialApproval, loadFinancialTasks, loadWorkspaceHierarchy } from "./workspaceRepository";
 import { supabase } from "./supabaseClient";
 
 type Status = "Pendente" | "Em aprovação" | "Aprovado" | "Executado";
@@ -179,17 +179,25 @@ function Workspace() {
     event.preventDefault();
     const name = newEntityName.trim();
     if (!name || !createTarget) return;
-    if (createTarget === "departamento" && usesRemoteTasks) {
+    if (["departamento", "pasta", "lista"].includes(createTarget) && usesRemoteTasks) {
       try {
-        await createWorkspaceDepartment(name);
+        if (createTarget === "departamento") await createWorkspaceDepartment(name);
+        if (createTarget === "pasta") await createWorkspaceFolder(activeDepartment, name);
+        if (createTarget === "lista") {
+          if (!selectedFolderId) throw new Error("Selecione uma pasta antes de criar a lista.");
+          await createWorkspaceList(selectedFolderId, name);
+        }
         const remoteDepartments = await loadWorkspaceHierarchy();
         if (remoteDepartments?.length) {
           setDepartments(remoteDepartments.map((department) => department.name));
           setDepartmentFolders(Object.fromEntries(remoteDepartments.map((department) => [department.name, department.folders])));
-          setActiveDepartment(name); setExpandedDepartment(name); setSelectedFolderId(null); setSelectedListId(null);
+          if (createTarget === "departamento") { setActiveDepartment(name); setExpandedDepartment(name); setSelectedFolderId(null); setSelectedListId(null); }
+          if (createTarget === "pasta") { const folder = remoteDepartments.find((department) => department.name === activeDepartment)?.folders.find((item) => item.name === name); setSelectedFolderId(folder?.id ?? null); }
+          if (createTarget === "lista") { const folder = remoteDepartments.flatMap((department) => department.folders).find((item) => item.id === selectedFolderId); const list = folder?.lists.find((item) => item.name === name); setSelectedListId(list?.id ?? null); }
         }
-      } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível criar o departamento compartilhado."); return; }
-      setNotice("Departamento criado para toda a equipe."); setNewEntityName(""); setCreateTarget(null); return;
+      } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível criar a estrutura compartilhada."); return; }
+      const label = createTarget === "departamento" ? "Departamento" : createTarget === "pasta" ? "Pasta" : "Lista";
+      setNotice(`${label} criado(a) para toda a equipe.`); setNewEntityName(""); setCreateTarget(null); return;
     }
     if (createTarget === "canal") { setChannels((current) => [...current, name]); setChannelName(name); setChannelOpen(true); setSection("Canais"); }
     if (createTarget === "mensagem") { setDirectMessages((current) => [...current, name]); setChannelName(name); setChannelOpen(true); setSection("Canais"); }

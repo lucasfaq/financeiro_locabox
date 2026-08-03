@@ -1,6 +1,6 @@
 ---
 title: Checklist de implementação — Plataforma colaborativa ITP/Locabox
-updated: 2026-08-02
+updated: 2026-08-03
 status: em_andamento
 sources:
   - README.md
@@ -23,18 +23,18 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [x] Persistência local por navegador com `localStorage`.
 - [x] Interface responsiva inicial e identidade ITP/Locabox.
 - [x] Lint e build aprovados.
-- [-] Cliente Supabase, migrations, carregamento autenticado de hierarquia e persistência de atividades aplicados; os demais módulos ainda usam fallback local.
+- [-] Cliente Supabase, migrations, carregamento autenticado de hierarquia e persistência de atividades aplicados; comunicação, documentos, templates e Caixa de Entrada ainda usam fallback local.
 - [x] Projeto Supabase de teste escolhido e conectado (`qeeqtbjwkppahjaaqekp`).
-- [-] Login por e-mail e senha, RLS, Realtime e Storage implementados; papéis e desativação de conta modelados em migration. Falta aplicar a migration e validar ponta a ponta no Pages com usuário de teste.
+- [x] Login por e-mail e senha, RLS, Realtime e Storage implementados; papéis, desativação e administração de usuários estão publicados. Falta ampliar permissões e testes automatizados.
 - [ ] Observabilidade, tratamento de erros, auditoria e backups.
 - [ ] Testes automatizados de unidade, integração e interface.
 
 ## 2. Organização do trabalho
 
-- [-] Departamentos, pastas e listas carregam do Supabase para sessões autenticadas, com fallback local de demonstração.
+- [-] Departamentos, pastas e listas carregam do Supabase para sessões autenticadas; a criação compartilhada está sendo concluída nesta etapa e permanece fallback local sem conexão.
 - [x] Árvore expansível Departamento → Pasta → Lista.
-- [x] Criar, renomear e excluir departamento/pasta localmente.
-- [x] Criar listas com ID persistente.
+- [-] Criar departamento, pasta e lista compartilhados; renomear e excluir ainda são locais.
+- [x] Criar listas com ID persistente no Supabase para sessões autenticadas.
 - [x] Tarefas vinculadas a uma lista e contagem por lista.
 - [-] Menus de departamento/pasta: status, template e permissões apenas locais.
 - [ ] Menus completos para listas (renomear, status, template, permissões, exclusão).
@@ -46,11 +46,11 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 
 - [-] Criar tarefa em branco com lista, título, tipo e campos financeiros; persiste no Supabase quando autenticado e preserva o modo local.
 - [-] Status, prioridade, responsável, vencimento, empresa, categoria e valor; status e os campos suportados persistem no Supabase quando autenticado.
-- [-] Aprovar ou devolver atividade; a mudança de status persiste no Supabase quando autenticado.
+- [x] Aprovar ou devolver atividade; decisão, justificativa, aprovador e status persistem no Supabase quando autenticado.
 - [x] Filtro por status e busca local por título.
 - [x] Visões locais: Lista, Quadro, Calendário e Gantt.
 - [-] Aba “A partir de template” leva à biblioteca, sem preencher uma tarefa a partir do modelo.
-- [-] Calendário e Gantt são visões demonstrativas, sem datas/intervalos reais.
+- [-] Calendário mensal usa datas reais de vencimento; Gantt continua demonstrativo, sem intervalos e dependências reais.
 - [-] Página/painel de detalhe com subtarefas, comentários e anexos privados persistidos para atividades autenticadas; recursos avançados continuam pendentes.
 - [-] Subtarefas, comentários e metadados de anexos persistentes modelados no Supabase; descrição rica, responsáveis múltiplos, etiquetas e dependências continuam pendentes.
 - [ ] Datas reais de início, vencimento, recorrência e alertas.
@@ -67,7 +67,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [ ] Criar, editar, salvar, compartilhar e excluir visualizações por lista/departamento.
 - [ ] Configurar agrupamento, filtros, ordenação, colunas e campos por visualização.
 - [ ] Quadro com arrastar entre status.
-- [ ] Calendário baseado em datas reais.
+- [x] Calendário baseado em datas reais de vencimento.
 - [ ] Gantt com períodos, dependências e progresso reais.
 - [ ] Painéis por empresa/departamento com indicadores calculados.
 
@@ -99,8 +99,8 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 ## 7. Gestão e administração
 
 - [x] Entradas de navegação para Empresas, Equipe e Configurações.
-- [ ] Cadastro e alternância de empresas (ITP e Locabox).
-- [ ] Gestão de equipe, convites, papéis e desligamento.
+- [x] Cadastro e ativação/desativação de empresas.
+- [-] Gestão de equipe com criação, papéis, bloqueio e redefinição de senha; convites, vínculos organizacionais e edição de papel ainda pendentes.
 - [ ] Configurações de status, tipos de tarefa, campos personalizados e SLA.
 - [ ] Matriz de permissão e revisão de acessos.
 - [ ] Logs de atividade, exportação e retenção de dados.
