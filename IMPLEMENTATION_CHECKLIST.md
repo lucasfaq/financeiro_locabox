@@ -76,8 +76,8 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [x] Canais e mensagens diretas locais.
 - [x] Envio local de mensagem e composição de canal.
 - [x] Formulários locais para criar canal e mensagem direta.
-- [-] Canais persistentes e Realtime configurados no banco; a interface ainda usa a coleção demonstrativa durante a conexão desta etapa.
-- [-] Estrutura e RLS para canais persistentes por departamento, lista e projeto; vínculo da interface e regras de membros adicionais pendentes.
+- [-] Canais e mensagens persistentes conectados à interface para sessões autenticadas; atualizações em tempo real da conversa e mensagens diretas ainda pendentes.
+- [-] Estrutura e RLS para canais persistentes por departamento, lista e projeto; criação de canal geral conectada, vínculo por departamento/lista e gestão ampliada de membros pendentes.
 - [-] Membros protegidos por RLS para leitura e envio; papéis por canal, menções, reações, GIF/emoji e comandos pendentes.
 - [ ] Chamada/reunião, se for requisito confirmado para o produto.
 - [ ] Vincular conversa a tarefa/lista/documento.
