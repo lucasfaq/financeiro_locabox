@@ -16,7 +16,7 @@ import { AuthGate } from "./AuthGate";
 import { AdminUsers } from "./AdminUsers";
 import { CompaniesManagement } from "./CompaniesManagement";
 import { TaskDetail } from "./TaskDetail";
-import { createFinancialTask, decideFinancialApproval, loadFinancialTasks, loadWorkspaceHierarchy } from "./workspaceRepository";
+import { createFinancialTask, createWorkspaceDepartment, decideFinancialApproval, loadFinancialTasks, loadWorkspaceHierarchy } from "./workspaceRepository";
 import { supabase } from "./supabaseClient";
 
 type Status = "Pendente" | "Em aprovação" | "Aprovado" | "Executado";
@@ -175,10 +175,22 @@ function Workspace() {
     setNotice("Mensagem enviada ao canal # pagamentos-e-aprovacoes.");
   };
 
-  const createWorkspaceEntity = (event: React.FormEvent<HTMLFormElement>) => {
+  const createWorkspaceEntity = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const name = newEntityName.trim();
     if (!name || !createTarget) return;
+    if (createTarget === "departamento" && usesRemoteTasks) {
+      try {
+        await createWorkspaceDepartment(name);
+        const remoteDepartments = await loadWorkspaceHierarchy();
+        if (remoteDepartments?.length) {
+          setDepartments(remoteDepartments.map((department) => department.name));
+          setDepartmentFolders(Object.fromEntries(remoteDepartments.map((department) => [department.name, department.folders])));
+          setActiveDepartment(name); setExpandedDepartment(name); setSelectedFolderId(null); setSelectedListId(null);
+        }
+      } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível criar o departamento compartilhado."); return; }
+      setNotice("Departamento criado para toda a equipe."); setNewEntityName(""); setCreateTarget(null); return;
+    }
     if (createTarget === "canal") { setChannels((current) => [...current, name]); setChannelName(name); setChannelOpen(true); setSection("Canais"); }
     if (createTarget === "mensagem") { setDirectMessages((current) => [...current, name]); setChannelName(name); setChannelOpen(true); setSection("Canais"); }
     if (createTarget === "departamento") { setDepartments((current) => [...current, name]); setDepartmentFolders((current) => ({ ...current, [name]: [] })); setActiveDepartment(name); setChannelOpen(false); setSection("Visão geral"); }

@@ -38,6 +38,12 @@ export async function loadWorkspaceHierarchy(): Promise<RemoteDepartment[] | nul
   return (departments ?? []).map((department) => ({ id: department.id, name: department.nome, folders: (folders ?? []).filter((folder) => folder.departamento_id === department.id).map((folder) => ({ id: folder.id, name: folder.nome, lists: (lists ?? []).filter((list) => list.pasta_id === folder.id).map((list) => ({ id: list.id, name: list.nome })) })) }));
 }
 
+export async function createWorkspaceDepartment(name: string): Promise<void> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const { error } = await supabase.from("departamentos").insert({ nome: name });
+  if (error) throw error;
+}
+
 export async function loadFinancialTasks(): Promise<RemoteTask[] | null> {
   if (!supabase) return null;
   const { data: companies, error: companyError } = await supabase.from("empresas").select("id,nome").eq("ativo", true);

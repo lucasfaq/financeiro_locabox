@@ -28,7 +28,7 @@ Toda tabela exposta usa RLS. A chave `service_role` nunca deve ser colocada em `
 
 > O Supabase CLI não está instalado neste ambiente. Antes de aplicar migrations em produção, instale-o, autentique-se, revise as RLS policies e valide o banco em um projeto de teste. Não aplique credenciais ou migrations sem um projeto Supabase explicitamente escolhido.
 
-As entidades `departamentos`, `canais`, `canal_membros` e `mensagens_canal` formam o núcleo colaborativo. As tarefas e suas visualizações pertencem ao departamento; os canais servem à comunicação, incluindo canal geral, canais departamentais e mensagens diretas. Todo canal privado só pode ser lido e usado por seus membros.
+As entidades `departamentos`, `canais`, `canal_membros` e `mensagens_canal` formam o núcleo colaborativo. As tarefas e suas visualizações pertencem ao departamento; os canais servem à comunicação, incluindo canal geral, canais departamentais e mensagens diretas. Todo canal privado só pode ser lido e usado por seus membros. Ao usar Supabase, a criação de um departamento é compartilhada com a equipe; pastas, listas e canais ainda estão em evolução para a mesma persistência.
 
 ## GitHub Pages
 
