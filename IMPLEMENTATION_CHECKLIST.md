@@ -81,7 +81,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [-] Membros protegidos por RLS para leitura e envio; papéis por canal, menções, reações, GIF/emoji e comandos pendentes.
 - [ ] Chamada/reunião, se for requisito confirmado para o produto.
 - [ ] Vincular conversa a tarefa/lista/documento.
-- [ ] Realtime, presença e indicadores de leitura.
+- [-] Realtime de mensagens por canal conectado; presença e indicadores de leitura pendentes.
 - [ ] Notificações in-app, e-mail e preferências do usuário.
 
 ## 6. Caixa de entrada, busca e documentos

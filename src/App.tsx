@@ -140,6 +140,12 @@ function Workspace() {
     if (!usesRemoteTasks || !activeChannelId) return;
     void loadChannelMessages(activeChannelId).then((items) => setMessages(items.map((item) => ({ author: item.author, initials: "EQ", time: "", text: item.content })))).catch(() => setNotice("Não foi possível carregar as mensagens do canal."));
   }, [activeChannelId, setMessages, usesRemoteTasks]);
+  useEffect(() => {
+    const client = supabase;
+    if (!client || !usesRemoteTasks || !activeChannelId) return;
+    const channel = client.channel(`mensagens-${activeChannelId}`).on("postgres_changes", { event: "*", schema: "public", table: "mensagens_canal", filter: `canal_id=eq.${activeChannelId}` }, () => { void loadChannelMessages(activeChannelId).then((items) => setMessages(items.map((item) => ({ author: item.author, initials: "EQ", time: "", text: item.content })))); }).subscribe();
+    return () => { void client.removeChannel(channel); };
+  }, [activeChannelId, setMessages, usesRemoteTasks]);
   const allLists = useMemo(() => Object.entries(departmentFolders).flatMap(([department, folders]) => folders.flatMap((folder) => folder.lists.map((rawList) => ({ ...asWorkspaceList(rawList, department, folder.id), department, folder: folder.name })))), [departmentFolders]);
   const selectedList = allLists.find((list) => list.id === selectedListId);
   const visibleTasks = useMemo(() => tasks.filter((task) => (filter === "Todos" || task.status === filter) && task.title.toLowerCase().includes(search.toLowerCase()) && (!selectedListId || (task.listId || "financeiro-pagamentos") === selectedListId)), [tasks, filter, search, selectedListId]);
