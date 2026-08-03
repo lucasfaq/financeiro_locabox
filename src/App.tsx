@@ -15,6 +15,7 @@ import { usePersistentState } from "./usePersistentState";
 import { AuthGate } from "./AuthGate";
 import { AdminUsers } from "./AdminUsers";
 import { CompaniesManagement } from "./CompaniesManagement";
+import { OrganizationAssignments } from "./OrganizationAssignments";
 import { TaskDetail } from "./TaskDetail";
 import { createChannelMessage, createFinancialTask, createWorkspaceChannel, createWorkspaceDepartment, createWorkspaceFolder, createWorkspaceList, decideFinancialApproval, loadChannelMessages, loadFinancialTasks, loadWorkspaceChannels, loadWorkspaceHierarchy } from "./workspaceRepository";
 import { supabase } from "./supabaseClient";
@@ -280,7 +281,7 @@ function Workspace() {
       {section === "Templates" && <TemplatesLibrary templates={templates} onSaveCurrent={() => { setTemplates((current) => [...current, { id: Date.now(), name: "Rotina de pagamentos", category: "Processo financeiro", description: "Lista, responsáveis e campos financeiros reutilizáveis." }]); setNotice("Visão salva como template do departamento."); }} onUse={(template) => { setShowModal(true); setNotice(`Use o template “${template.name}” para criar a próxima tarefa.`); }} />}
       {section === "Caixa de Entrada" && <Inbox items={inboxItems} onMarkRead={(id) => setInboxItems((current) => current.map((item) => item.id === id ? { ...item, read: true } : item))} onClearRead={() => setInboxItems((current) => current.filter((item) => !item.read))} />}
       {section === "Documentos" && <DocumentsWorkspace documents={documents} onCreate={() => setDocuments((current) => [...current, { id: Date.now(), title: "Sem título", body: "", updated: "agora" }])} onUpdate={(id, patch) => setDocuments((current) => current.map((document) => document.id === id ? { ...document, ...patch } : document))} />}
-      {section === "Equipe" && <AdminUsers />}
+      {section === "Equipe" && <><AdminUsers /><OrganizationAssignments /></>}
       {section === "Empresas" && <CompaniesManagement />}
       <div hidden={section === "Templates" || section === "Caixa de Entrada" || section === "Documentos" || section === "Equipe" || section === "Empresas"}>
       <div className="summary-grid">
