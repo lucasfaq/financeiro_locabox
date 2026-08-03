@@ -35,6 +35,18 @@ Crie um repositório público chamado `financeiro_locabox`, envie este projeto e
 
 O workflow publica o frontend estático automaticamente após cada envio à branch `main`.
 
+### Conectar e validar a publicação
+
+1. No Supabase, abra o projeto `qeeqtbjwkppahjaaqekp` em **Settings > API Keys**. Copie a **Project URL** e a chave **Publishable** (ou a chave legada `anon`). Nunca copie `service_role` ou `sb_secret_...`.
+2. No GitHub, abra `lucasfaq/financeiro_locabox` em **Settings > Secrets and variables > Actions**. Crie a variável `VITE_SUPABASE_URL` com a Project URL e o secret `VITE_SUPABASE_ANON_KEY` com a chave pública.
+3. No Supabase, abra **Authentication > URL Configuration** e inclua exatamente `https://lucasfaq.github.io/financeiro_locabox/` em **Redirect URLs**. Mantenha também `http://localhost:5175/` para desenvolvimento.
+4. No GitHub, execute novamente **Actions > Publicar piloto > Run workflow** (ou envie um commit à `main`). Aguarde a execução bem-sucedida.
+5. Abra `https://lucasfaq.github.io/financeiro_locabox/`. A tela deve solicitar o e-mail corporativo, em vez de abrir o modo demonstrativo.
+6. Peça um magic link, abra-o no mesmo navegador e confirme que retorna para `/financeiro_locabox/` já autenticado.
+7. Valide: a árvore de departamentos carrega; crie uma atividade; altere o status; crie uma subtarefa e um comentário; anexe um PDF menor que 10 MB; abra o anexo. Em uma segunda sessão autenticada, confirme a atualização da atividade em tempo real.
+
+Se a etapa 5 ainda abrir o modo demonstrativo, as variáveis não entraram no build do GitHub Actions. Confirme os nomes, reexecute o workflow e não crie arquivo `.env` no repositório.
+
 ## Migração HostGator
 
 Na HostGator compartilhada, publique o conteúdo de `dist/` na pasta do subdomínio `financeiro.itplocabox.com.br`. Mantenha o Supabase como backend e adicione a URL de produção à lista de Redirect URLs/Auth URLs do Supabase. Não há necessidade de VPS nesta arquitetura.
