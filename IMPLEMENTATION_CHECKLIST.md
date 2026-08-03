@@ -28,6 +28,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [x] Login por e-mail e senha, RLS, Realtime e Storage implementados; papéis, desativação e administração de usuários estão publicados. Falta ampliar permissões e testes automatizados.
 - [ ] Observabilidade, tratamento de erros, auditoria e backups.
 - [ ] Testes automatizados de unidade, integração e interface.
+- [ ] Ativar proteção contra senhas vazadas no Supabase Auth; auditoria de segurança em 2026-08-03 não encontrou alerta de RLS, mas indicou esta configuração de Auth como pendente.
 
 ## 2. Organização do trabalho
 
