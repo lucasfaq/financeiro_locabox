@@ -8,6 +8,7 @@ export type RemoteTask = { id: string; title: string; company: "ITP" | "Locabox"
 export type CreateRemoteTask = Omit<RemoteTask, "id">;
 export type RemoteSubtask = { id: string; title: string; done: boolean };
 export type RemoteComment = { id: string; content: string; author: string };
+export type RemoteAttachment = { id: string; name: string; path: string; mimeType: string | null; size: number | null };
 
 const statusFromDatabase: Record<string, RemoteTaskStatus> = { rascunho: "Pendente", pendente: "Pendente", em_aprovacao: "Em aprovação", aprovado: "Aprovado", executado: "Executado", cancelado: "Pendente" };
 const statusToDatabase: Record<RemoteTaskStatus, string> = { Pendente: "pendente", "Em aprovação": "em_aprovacao", Aprovado: "aprovado", Executado: "executado" };
@@ -67,15 +68,17 @@ export async function updateFinancialTaskStatus(id: string, status: RemoteTaskSt
   if (error) throw error;
 }
 
-export async function loadTaskDetails(taskId: string): Promise<{ subtasks: RemoteSubtask[]; comments: RemoteComment[] }> {
+export async function loadTaskDetails(taskId: string): Promise<{ subtasks: RemoteSubtask[]; comments: RemoteComment[]; attachments: RemoteAttachment[] }> {
   if (!supabase) throw new Error("Supabase não está configurado.");
-  const [{ data: subtasks, error: subtasksError }, { data: comments, error: commentsError }] = await Promise.all([
+  const [{ data: subtasks, error: subtasksError }, { data: comments, error: commentsError }, { data: attachments, error: attachmentsError }] = await Promise.all([
     supabase.from("subtarefas_financeiras").select("id,titulo,concluida").eq("atividade_id", taskId).order("ordem").order("created_at"),
     supabase.from("comentarios_atividade").select("id,conteudo,autor_id").eq("atividade_id", taskId).order("created_at"),
+    supabase.from("anexos_atividade").select("id,nome,caminho,tipo_mime,tamanho_bytes").eq("atividade_id", taskId).order("created_at"),
   ]);
   if (subtasksError) throw subtasksError;
   if (commentsError) throw commentsError;
-  return { subtasks: (subtasks ?? []).map((item) => ({ id: item.id, title: item.titulo, done: item.concluida })), comments: (comments ?? []).map((item) => ({ id: item.id, content: item.conteudo, author: item.autor_id ? "Membro da equipe" : "Equipe" })) };
+  if (attachmentsError) throw attachmentsError;
+  return { subtasks: (subtasks ?? []).map((item) => ({ id: item.id, title: item.titulo, done: item.concluida })), comments: (comments ?? []).map((item) => ({ id: item.id, content: item.conteudo, author: item.autor_id ? "Membro da equipe" : "Equipe" })), attachments: (attachments ?? []).map((item) => ({ id: item.id, name: item.nome, path: item.caminho, mimeType: item.tipo_mime, size: item.tamanho_bytes })) };
 }
 
 async function getCurrentUserId(): Promise<string> {
@@ -106,4 +109,31 @@ export async function createTaskComment(taskId: string, content: string): Promis
   const { data, error } = await supabase.from("comentarios_atividade").insert({ atividade_id: taskId, conteudo: content, autor_id: userId }).select("id,conteudo").single();
   if (error) throw error;
   return { id: data.id, content: data.conteudo, author: "Você" };
+}
+
+const attachmentBucket = "anexos-atividades";
+const supportedAttachmentTypes = new Set(["application/pdf", "image/jpeg", "image/png", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]);
+
+function safeFileName(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-180) || "anexo";
+}
+
+export async function uploadTaskAttachment(taskId: string, file: File): Promise<RemoteAttachment> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  if (!supportedAttachmentTypes.has(file.type)) throw new Error("Formato não permitido. Envie PDF, JPEG, PNG ou XLSX.");
+  if (file.size > 10 * 1024 * 1024) throw new Error("O anexo deve ter no máximo 10 MB.");
+  const userId = await getCurrentUserId();
+  const path = `${userId}/${taskId}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
+  const { error: uploadError } = await supabase.storage.from(attachmentBucket).upload(path, file, { contentType: file.type, upsert: false });
+  if (uploadError) throw uploadError;
+  const { data, error } = await supabase.from("anexos_atividade").insert({ atividade_id: taskId, autor_id: userId, bucket_id: attachmentBucket, caminho: path, nome: file.name, tipo_mime: file.type, tamanho_bytes: file.size }).select("id,nome,caminho,tipo_mime,tamanho_bytes").single();
+  if (error) { await supabase.storage.from(attachmentBucket).remove([path]); throw error; }
+  return { id: data.id, name: data.nome, path: data.caminho, mimeType: data.tipo_mime, size: data.tamanho_bytes };
+}
+
+export async function getTaskAttachmentUrl(path: string): Promise<string> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const { data, error } = await supabase.storage.from(attachmentBucket).createSignedUrl(path, 60);
+  if (error) throw error;
+  return data.signedUrl;
 }
