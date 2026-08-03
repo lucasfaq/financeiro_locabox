@@ -20,6 +20,10 @@ Acesse `http://localhost:5175`. Sem `.env`, a interface abre em modo local persi
 3. Copie `.env.example` para `.env` e preencha somente a URL e a chave pública do projeto.
 4. Crie os usuários por convite e atualize seus perfis na tabela `public.perfis` usando o Dashboard/controle administrativo futuro.
 
+O acesso é por e-mail e senha. Os papéis disponíveis são `administrador`, `financeiro`, `aprovador`, `diretoria` e `consulta`; uma conta com `ativo = false` não pode usar a aplicação. Crie contas com senha em **Authentication > Users** no Supabase e atribua o papel na tabela `public.perfis`.
+
+Antes do primeiro acesso com senha, aplique no SQL Editor do Supabase a migration `supabase/migrations/20260803135834_controle_acesso_por_papel.sql`. Depois crie o primeiro usuário em **Authentication > Users > Add user**, informando e-mail, senha temporária e confirmação de e-mail; em **Table Editor > perfis**, atribua `administrador` a essa conta. Os próximos usuários podem receber os demais papéis e ser bloqueados alterando `ativo` para `false`.
+
 Toda tabela exposta usa RLS. A chave `service_role` nunca deve ser colocada em `.env` com prefixo `VITE_`, no GitHub Pages ou no frontend.
 
 > O Supabase CLI não está instalado neste ambiente. Antes de aplicar migrations em produção, instale-o, autentique-se, revise as RLS policies e valide o banco em um projeto de teste. Não aplique credenciais ou migrations sem um projeto Supabase explicitamente escolhido.

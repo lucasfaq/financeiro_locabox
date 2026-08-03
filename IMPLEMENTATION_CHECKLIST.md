@@ -25,7 +25,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [x] Lint e build aprovados.
 - [-] Cliente Supabase, migrations, carregamento autenticado de hierarquia e persistência de atividades aplicados; os demais módulos ainda usam fallback local.
 - [x] Projeto Supabase de teste escolhido e conectado (`qeeqtbjwkppahjaaqekp`).
-- [-] Auth, RLS, Realtime e Storage implementados; falta validação ponta a ponta no Pages após cadastrar as variáveis e um usuário de teste.
+- [-] Login por e-mail e senha, RLS, Realtime e Storage implementados; papéis e desativação de conta modelados em migration. Falta aplicar a migration e validar ponta a ponta no Pages com usuário de teste.
 - [ ] Observabilidade, tratamento de erros, auditoria e backups.
 - [ ] Testes automatizados de unidade, integração e interface.
 
