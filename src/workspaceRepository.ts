@@ -198,6 +198,12 @@ export async function updateWorkspaceDocument(id: string, patch: { title?: strin
   if (error) throw error;
 }
 
+export async function deleteWorkspaceDocument(id: string): Promise<void> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const { error } = await supabase.from("documentos_trabalho").delete().eq("id", id);
+  if (error) throw error;
+}
+
 export async function loadWorkspaceTemplates(): Promise<RemoteWorkspaceTemplate[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase.from("templates_trabalho").select("id,nome,categoria,descricao").order("updated_at", { ascending: false });
