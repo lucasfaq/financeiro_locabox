@@ -10,7 +10,7 @@ export type UpdateRemoteTask = Pick<RemoteTask, "title" | "due" | "value" | "pri
 export type RemoteSubtask = { id: string; title: string; done: boolean };
 export type RemoteComment = { id: string; content: string; author: string };
 export type RemoteAttachment = { id: string; name: string; path: string; mimeType: string | null; size: number | null };
-export type RemoteChannel = { id: string; name: string; isPrivate: boolean };
+export type RemoteChannel = { id: string; name: string; isPrivate: boolean; kind: "geral" | "departamento" | "direto" };
 export type RemoteChannelMember = { userId: string };
 export type RemoteWorkspaceUser = { id: string; name: string };
 export type RemoteChannelMessage = { id: string; content: string; author: string };
@@ -71,19 +71,30 @@ export async function createWorkspaceList(folderId: string, name: string): Promi
 
 export async function loadWorkspaceChannels(): Promise<RemoteChannel[] | null> {
   if (!supabase) return null;
-  const { data, error } = await supabase.from("canais").select("id,nome,privado").order("created_at");
+  const { data, error } = await supabase.from("canais").select("id,nome,privado,tipo").order("created_at");
   if (error) throw error;
-  return (data ?? []).map((channel) => ({ id: channel.id, name: channel.nome, isPrivate: channel.privado }));
+  return (data ?? []).map((channel) => ({ id: channel.id, name: channel.nome, isPrivate: channel.privado, kind: channel.tipo === "direto" ? "direto" : channel.tipo === "departamento" ? "departamento" : "geral" }));
 }
 
 export async function createWorkspaceChannel(name: string, isPrivate = false): Promise<RemoteChannel> {
   if (!supabase) throw new Error("Supabase não está configurado.");
   const userId = await getCurrentUserId();
-  const { data, error } = await supabase.from("canais").insert({ nome: name, tipo: "geral", privado: isPrivate, criado_por: userId }).select("id,nome,privado").single();
+  const { data, error } = await supabase.from("canais").insert({ nome: name, tipo: "geral", privado: isPrivate, criado_por: userId }).select("id,nome,privado,tipo").single();
   if (error) throw error;
   const { error: memberError } = await supabase.from("canal_membros").insert({ canal_id: data.id, usuario_id: userId });
   if (memberError) throw memberError;
-  return { id: data.id, name: data.nome, isPrivate: data.privado };
+  return { id: data.id, name: data.nome, isPrivate: data.privado, kind: "geral" };
+}
+
+export async function createDirectMessage(target: RemoteWorkspaceUser): Promise<RemoteChannel> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const userId = await getCurrentUserId();
+  if (target.id === userId) throw new Error("Escolha outra pessoa para iniciar uma mensagem direta.");
+  const { data, error } = await supabase.from("canais").insert({ nome: target.name, tipo: "direto", privado: true, criado_por: userId }).select("id,nome,privado,tipo").single();
+  if (error) throw error;
+  const { error: memberError } = await supabase.from("canal_membros").insert([{ canal_id: data.id, usuario_id: userId }, { canal_id: data.id, usuario_id: target.id }]);
+  if (memberError) throw memberError;
+  return { id: data.id, name: data.nome, isPrivate: data.privado, kind: "direto" };
 }
 
 export async function loadChannelMembers(channelId: string): Promise<RemoteChannelMember[]> {

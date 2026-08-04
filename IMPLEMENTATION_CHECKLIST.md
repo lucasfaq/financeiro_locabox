@@ -74,10 +74,10 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 
 ## 5. Comunicação e colaboração
 
-- [x] Canais e mensagens diretas locais.
-- [x] Envio local de mensagem e composição de canal.
-- [x] Formulários locais para criar canal e mensagem direta.
-- [-] Canais e mensagens persistentes conectados à interface para sessões autenticadas; atualizações em tempo real da conversa e mensagens diretas ainda pendentes.
+- [-] Canais e mensagens diretas locais, com canais e mensagens diretas persistentes para sessões autenticadas.
+- [-] Envio local e persistente de mensagem em canais e conversas diretas.
+- [-] Formulários para criar canal e mensagem direta; no modo autenticado a pessoa é selecionada do diretório ativo.
+- [-] Canais e mensagens persistentes conectados à interface para sessões autenticadas; conversas diretas privadas persistentes concluídas, enquanto presença e indicadores de leitura permanecem pendentes.
 - [-] Estrutura e RLS para canais persistentes por departamento, lista e projeto; canais públicos são colaborativos para usuários ativos e os privados exigem membresia. Criador do canal ou administrador pode adicionar/remover membros ativos pela interface; vínculo por departamento/lista pendente.
 - [-] Membros protegidos por RLS para leitura e envio; criação e gestão visual de membros de canais privados concluídas. Papéis por canal, menções, reações, GIF/emoji e comandos pendentes.
 - [ ] Chamada/reunião, se for requisito confirmado para o produto.
