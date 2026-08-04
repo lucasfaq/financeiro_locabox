@@ -1,6 +1,6 @@
 ---
 title: Checklist de implementação — Plataforma colaborativa ITP/Locabox
-updated: 2026-08-03
+updated: 2026-08-04
 status: em_andamento
 sources:
   - README.md
@@ -78,8 +78,8 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [x] Envio local de mensagem e composição de canal.
 - [x] Formulários locais para criar canal e mensagem direta.
 - [-] Canais e mensagens persistentes conectados à interface para sessões autenticadas; atualizações em tempo real da conversa e mensagens diretas ainda pendentes.
-- [-] Estrutura e RLS para canais persistentes por departamento, lista e projeto; canais públicos são colaborativos para usuários ativos e os privados exigem membresia. Vínculo por departamento/lista e gestão ampliada de membros pendentes.
-- [-] Membros protegidos por RLS para leitura e envio; papéis por canal, menções, reações, GIF/emoji e comandos pendentes.
+- [-] Estrutura e RLS para canais persistentes por departamento, lista e projeto; canais públicos são colaborativos para usuários ativos e os privados exigem membresia. Criador do canal ou administrador pode adicionar/remover membros ativos pela interface; vínculo por departamento/lista pendente.
+- [-] Membros protegidos por RLS para leitura e envio; criação e gestão visual de membros de canais privados concluídas. Papéis por canal, menções, reações, GIF/emoji e comandos pendentes.
 - [ ] Chamada/reunião, se for requisito confirmado para o produto.
 - [ ] Vincular conversa a tarefa/lista/documento.
 - [-] Realtime de mensagens por canal conectado; presença e indicadores de leitura pendentes.
@@ -144,7 +144,7 @@ Esta varredura foi realizada em modo somente leitura, em uma sessão autenticada
 - [ ] Marcar tudo como lido e limpar tudo com dados reais.
 - [ ] Colunas de tarefa: nome, responsáveis, início, vencimento e comentários; configuração por visualização.
 - [ ] Compositor de canais com comandos, emoji, GIF e anexos.
-- [ ] Gestão visível de membros do canal e, se necessária, integração de chamada.
+- [-] Gestão visível de membros de canais privados concluída; integração de chamada segue pendente se confirmada como requisito.
 - [ ] Importação de templates e criação de instância a partir de lista/pasta/espaço/documento.
 - [ ] Perfil do usuário, preferências e recolhimento da barra lateral.
 

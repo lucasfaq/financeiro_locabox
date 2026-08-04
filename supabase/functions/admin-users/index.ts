@@ -26,11 +26,18 @@ Deno.serve(async (request) => {
   const { data: authData, error: authError } = await userClient.auth.getUser(token);
   if (authError || !authData.user) return response({ error: "Sessão inválida." }, 401, corsOrigin);
   const { data: caller } = await adminClient.from("perfis").select("perfil,ativo").eq("id", authData.user.id).maybeSingle();
-  if (caller?.perfil !== "administrador" || !caller.ativo) return response({ error: "Acesso restrito a administradores ativos." }, 403, corsOrigin);
+  if (!caller?.ativo) return response({ error: "Acesso restrito a usuários ativos." }, 403, corsOrigin);
 
   let input: Record<string, unknown>;
   try { input = await request.json(); } catch { return response({ error: "Corpo inválido." }, 400, corsOrigin); }
   const action = String(input.action ?? "");
+
+  if (action === "directory") {
+    const { data, error } = await adminClient.from("perfis").select("id,nome").eq("ativo", true).order("nome");
+    return error ? response({ error: error.message }, 400, corsOrigin) : response({ users: data ?? [] }, 200, corsOrigin);
+  }
+
+  if (caller.perfil !== "administrador") return response({ error: "Acesso restrito a administradores ativos." }, 403, corsOrigin);
 
   if (action === "list") {
     const { data, error } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
