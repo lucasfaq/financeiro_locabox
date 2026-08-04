@@ -331,6 +331,12 @@ export async function updateTaskSubtask(id: string, done: boolean): Promise<void
   if (error) throw error;
 }
 
+export async function deleteTaskSubtask(id: string): Promise<void> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const { error } = await supabase.from("subtarefas_financeiras").delete().eq("id", id);
+  if (error) throw error;
+}
+
 export async function createTaskComment(taskId: string, content: string): Promise<RemoteComment> {
   if (!supabase) throw new Error("Supabase não está configurado.");
   const userId = await getCurrentUserId();
