@@ -14,7 +14,7 @@ export type RemoteChannel = { id: string; name: string; isPrivate: boolean; kind
 export type RemoteChannelMember = { userId: string };
 export type RemoteWorkspaceUser = { id: string; name: string };
 export type RemoteChannelMessage = { id: string; content: string; author: string };
-export type RemoteNotification = { id: string; kind: "Tarefa" | "Mensagem"; title: string; detail: string; time: string; priority: boolean; read: boolean };
+export type RemoteNotification = { id: string; kind: "Tarefa" | "Mensagem"; title: string; detail: string; time: string; priority: boolean; read: boolean; snoozedUntil: string | null };
 export type RemoteWorkspaceDocument = { id: string; title: string; body: string; updated: string };
 export type RemoteWorkspaceTemplate = { id: string; name: string; category: string; description: string };
 
@@ -141,14 +141,20 @@ export async function createChannelMessage(channelId: string, content: string): 
 export async function loadNotifications(): Promise<RemoteNotification[] | null> {
   if (!supabase) return null;
   const userId = await getCurrentUserId();
-  const { data, error } = await supabase.from("notificacoes").select("id,tipo,titulo,detalhe,prioridade,lida_em,created_at").eq("destinatario_id", userId).order("created_at", { ascending: false });
+  const { data, error } = await supabase.from("notificacoes").select("id,tipo,titulo,detalhe,prioridade,lida_em,adiada_ate,created_at").eq("destinatario_id", userId).order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []).map((item) => ({ id: item.id, kind: item.tipo === "mensagem" ? "Mensagem" : "Tarefa", title: item.titulo, detail: item.detalhe ?? "", time: new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(item.created_at)), priority: item.prioridade, read: Boolean(item.lida_em) }));
+  return (data ?? []).map((item) => ({ id: item.id, kind: item.tipo === "mensagem" ? "Mensagem" : "Tarefa", title: item.titulo, detail: item.detalhe ?? "", time: new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(item.created_at)), priority: item.prioridade, read: Boolean(item.lida_em), snoozedUntil: item.adiada_ate }));
 }
 
 export async function markNotificationRead(id: string): Promise<void> {
   if (!supabase) throw new Error("Supabase não está configurado.");
   const { error } = await supabase.from("notificacoes").update({ lida_em: new Date().toISOString() }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function snoozeNotification(id: string, until: string | null): Promise<void> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const { error } = await supabase.from("notificacoes").update({ adiada_ate: until }).eq("id", id);
   if (error) throw error;
 }
 
