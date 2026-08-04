@@ -152,6 +152,12 @@ export async function markNotificationRead(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function markAllNotificationsRead(): Promise<void> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const { error } = await supabase.from("notificacoes").update({ lida_em: new Date().toISOString() }).is("lida_em", null);
+  if (error) throw error;
+}
+
 export async function snoozeNotification(id: string, until: string | null): Promise<void> {
   if (!supabase) throw new Error("Supabase não está configurado.");
   const { error } = await supabase.from("notificacoes").update({ adiada_ate: until }).eq("id", id);
