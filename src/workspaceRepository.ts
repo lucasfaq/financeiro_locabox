@@ -219,6 +219,12 @@ export async function createWorkspaceTemplate(template: Omit<RemoteWorkspaceTemp
   return { id: data.id, name: data.nome, category: data.categoria, description: data.descricao };
 }
 
+export async function deleteWorkspaceTemplate(id: string): Promise<void> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const { error } = await supabase.from("templates_trabalho").delete().eq("id", id);
+  if (error) throw error;
+}
+
 export async function loadFinancialTasks(): Promise<RemoteTask[] | null> {
   if (!supabase) return null;
   const { data: companies, error: companyError } = await supabase.from("empresas").select("id,nome").eq("ativo", true);
