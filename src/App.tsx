@@ -53,13 +53,22 @@ const taskDate = (due: string) => {
   const short = due.match(/^(\d{1,2})\s+ago$/i);
   return short ? new Date(new Date().getFullYear(), 7, Number(short[1]), 12) : null;
 };
-const ganttStyle = (task: { start?: string; due: string }) => {
+const ganttStyle = (task: { start?: string; due: string }, month: Date) => {
   const start = taskDate(task.start ?? task.due) ?? taskDate(task.due);
   const due = taskDate(task.due) ?? start;
   if (!start || !due) return { marginLeft: "0%", width: "8%" };
-  const startDay = Math.max(1, Math.min(31, start.getDate()));
-  const duration = Math.max(1, Math.round((due.getTime() - start.getTime()) / 86_400_000) + 1);
-  return { marginLeft: `${((startDay - 1) / 31) * 100}%`, width: `${Math.min(100 - ((startDay - 1) / 31) * 100, (duration / 31) * 100)}%` };
+  const firstDay = new Date(month.getFullYear(), month.getMonth(), 1, 12);
+  const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0, 12);
+  if (due < firstDay || start > lastDay) return { display: "none" };
+  const visibleStart = start < firstDay ? firstDay : start;
+  const visibleDue = due > lastDay ? lastDay : due;
+  const totalDays = lastDay.getDate();
+  const duration = Math.max(1, Math.round((visibleDue.getTime() - visibleStart.getTime()) / 86_400_000) + 1);
+  return { marginLeft: `${((visibleStart.getDate() - 1) / totalDays) * 100}%`, width: `${Math.min(100 - ((visibleStart.getDate() - 1) / totalDays) * 100, (duration / totalDays) * 100)}%` };
+};
+const ganttScale = (month: Date) => {
+  const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  return [1, Math.min(11, lastDay), Math.min(21, lastDay), lastDay].map((day) => new Date(month.getFullYear(), month.getMonth(), day, 12).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }).replace(".", ""));
 };
 
 function Workspace() {
@@ -446,7 +455,7 @@ function Workspace() {
         {taskView === "Lista" && <div className="compact-list">{tasks.map((task) => <div key={task.id}><span className={`priority ${task.priority.toLowerCase()}`}/><strong>{task.title}</strong><small>{task.owner} · {task.due}</small><span className={`status ${task.status.toLowerCase().replace(" ", "-")}`}>{task.status}</span></div>)}</div>}
         {taskView === "Quadro" && <div className="kanban">{(["Pendente", "Em aprovação", "Aprovado", "Executado"] as Status[]).map((status) => <div className="kanban-column" key={status} onDragOver={(event) => event.preventDefault()} onDrop={() => void moveTaskToStatus(status)}><header><strong>{status}</strong><span>{tasks.filter((task) => task.status === status).length}</span></header>{tasks.filter((task) => task.status === status).map((task) => <article key={task.id} draggable onDragStart={() => setDraggedTaskId(task.id)} onDragEnd={() => setDraggedTaskId(null)}><span className={task.priority === "Alta" ? "tag red-tag" : "tag"}>{task.company}</span><strong>{task.title}</strong><p>{task.owner} · {task.due}</p></article>)}</div>)}</div>}
         {taskView === "Calendário" && <div className="calendar-view"><div className="calendar-title"><button className="secondary-button" onClick={() => setCalendarCursor((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>‹</button><strong>{calendarCursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</strong><button className="secondary-button" onClick={() => setCalendarCursor((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>›</button></div><div className="calendar-weekdays">{["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => <span key={day}>{day}</span>)}</div><div className="calendar-grid monthly">{calendarCells.map((day, index) => <div key={`${calendarCursor.toISOString()}-${index}`} className={day ? "calendar-day" : "calendar-day outside"}>{day && <><strong>{day}</strong>{tasks.filter((task) => { const date = taskDate(task.due); return date?.getFullYear() === calendarCursor.getFullYear() && date.getMonth() === calendarCursor.getMonth() && date.getDate() === day; }).map((task) => <button key={task.id} className="calendar-task" onClick={() => setDetailTask(task)}>{task.title}</button>)}</>}</div>)}</div></div>}
-        {taskView === "Gantt" && <div className="gantt-view"><div className="gantt-scale"><span>01 ago</span><span>11 ago</span><span>21 ago</span><span>31 ago</span></div>{tasks.map((task) => <div className="gantt-row" key={task.id}><strong>{task.title}</strong><div><i style={ganttStyle(task)}>{task.status}</i></div></div>)}</div>}
+        {taskView === "Gantt" && <div className="gantt-view"><div className="calendar-title gantt-controls"><button className="secondary-button" onClick={() => setCalendarCursor((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>‹</button><strong>{calendarCursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</strong><button className="secondary-button" onClick={() => setCalendarCursor((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>›</button></div><div className="gantt-scale">{ganttScale(calendarCursor).map((label) => <span key={label}>{label}</span>)}</div>{tasks.map((task) => <div className="gantt-row" key={task.id}><strong>{task.title}</strong><div><i style={ganttStyle(task, calendarCursor)}>{task.status}</i></div></div>)}</div>}
       </section>}
       </div>
     </section>
