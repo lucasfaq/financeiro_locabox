@@ -21,6 +21,7 @@ import { ApprovalsPage, CalendarPage, ProfilePage, SettingsPage } from "./Produc
 import { addChannelMember, archiveFinancialTask, clearReadNotifications, createChannelMessage, createDirectMessage, createFinancialTask, createWorkspaceChannel, createWorkspaceDepartment, createWorkspaceDocument, createWorkspaceFolder, createWorkspaceList, createWorkspaceTemplate, decideFinancialApproval, loadActiveWorkspaceUsers, loadArchivedFinancialTasks, loadChannelMembers, loadChannelMessages, loadFinancialTasks, loadNotifications, loadWorkspaceChannels, loadWorkspaceDocuments, loadWorkspaceHierarchy, loadWorkspaceTemplates, markAllNotificationsRead, markNotificationRead, removeChannelMember, snoozeNotification, updateFinancialTask, updateFinancialTaskStatus, updateWorkspaceDocument, type RemoteChannelMember, type RemoteWorkspaceUser } from "./workspaceRepository";
 import { supabase } from "./supabaseClient";
 import { askFinanceiroAssistant } from "./assistantClient";
+import { loadUserProfile, type UserProfile } from "./userPreferencesRepository";
 
 type Status = "Pendente" | "Em aprovação" | "Aprovado" | "Executado";
 type Task = { id: string | number; title: string; company: "ITP" | "Locabox"; category: string; start?: string; due: string; owner: string; value: number; status: Status; priority: "Alta" | "Média" | "Baixa"; listId: string; taskType: "Tarefa" | "Aprovação" | "Financeiro" };
@@ -137,6 +138,7 @@ function Workspace() {
   const [usesRemoteTasks, setUsesRemoteTasks] = useState(false);
   const [draggedTaskId, setDraggedTaskId] = useState<Task["id"] | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = usePersistentState("itp-financeiro-sidebar-collapsed", false);
+  const [currentProfile, setCurrentProfile] = useState<UserProfile>({ name: "Usuário", email: "", role: "" });
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -178,6 +180,7 @@ function Workspace() {
 
   useEffect(() => { documentsRef.current = documents; }, [documents]);
   useEffect(() => () => { Object.values(documentSaveTimers.current).forEach((timer) => window.clearTimeout(timer)); }, []);
+  useEffect(() => { void loadUserProfile().then(setCurrentProfile).catch(() => undefined); }, []);
 
   useEffect(() => {
     const client = supabase;
@@ -442,7 +445,7 @@ function Workspace() {
         <button className="sidebar-add" onClick={() => setCreateTarget("departamento")}>+ Criar espaço</button>
       </div>
       <div className="nav-group"><p>GERENCIAR</p>{[{ label: "Empresas", icon: Building2 }, { label: "Equipe", icon: Users }, { label: "Configurações", icon: Settings }].map(({ label, icon: Icon }) => <button key={label} className={section === label ? "nav-link active" : "nav-link"} onClick={() => { setSection(label); setChannelOpen(false); }}><Icon size={18} />{label}</button>)}</div>
-      <button className="profile" onClick={() => { setSection("Perfil"); setChannelOpen(false); }}><div className="avatar">MA</div><div><strong>Marina Alves</strong><small>Financeiro</small></div><ChevronDown size={16} /></button>
+      <button className="profile" onClick={() => { setSection("Perfil"); setChannelOpen(false); }}><div className="avatar">{currentProfile.name.split(/\s+/).filter(Boolean).slice(0, 2).map((name) => name[0]).join("").toUpperCase() || "US"}</div><div><strong>{currentProfile.name}</strong><small>{currentProfile.role || "Perfil não definido"}</small></div><ChevronDown size={16} /></button>
     </aside>
     <section className="workspace">
       <header><div><p className="eyebrow">{selectedList ? `${selectedList.department.toUpperCase()} / ${selectedList.folder.toUpperCase()}` : `${activeDepartment.toUpperCase()} / AGOSTO 2026`}</p><h1>{selectedList ? selectedList.name : section}</h1></div><div className="header-actions"><button className="secondary-button" onClick={() => { setAssistantOpen(true); setAssistantError(""); }}><Sparkles size={16}/>Assistente</button><button className="secondary-button global-search-button" onClick={() => { setGlobalSearch(""); setGlobalSearchOpen(true); }}><Search size={16}/>Buscar <kbd>Ctrl K</kbd></button><button className="icon-button" aria-label="Notificações"><Bell size={19} /><i /></button><button className="primary-button" onClick={() => setShowModal(true)}><CirclePlus size={18} />Nova tarefa</button></div></header>
@@ -456,7 +459,7 @@ function Workspace() {
       {section === "Aprovações" && <ApprovalsPage tasks={approvalTasks} onDecide={(id, approved) => void decideApproval(id, approved)} />}
       {section === "Calendário" && <CalendarPage tasks={tasks} />}
       {section === "Configurações" && <SettingsPage />}
-      {section === "Perfil" && <ProfilePage />}
+      {section === "Perfil" && <ProfilePage onProfileUpdated={setCurrentProfile} />}
       <div hidden={section === "Templates" || section === "Caixa de Entrada" || section === "Documentos" || section === "Equipe" || section === "Empresas" || section === "Aprovações" || section === "Calendário" || section === "Configurações" || section === "Perfil"}>
       <div className="summary-grid">
         <article><span className="summary-icon blue"><ClipboardList size={19} /></span><p>Atividades abertas</p><strong>{tasks.filter((t) => t.status !== "Executado").length}</strong><small>3 com vencimento esta semana</small></article>

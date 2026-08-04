@@ -30,14 +30,14 @@ export function SettingsPage() {
   return <section className="product-page settings-page"><p className="eyebrow">ADMINISTRAÇÃO</p><h2>Configurações</h2><p>Preferências operacionais vinculadas à sua conta.</p><form onSubmit={submit}><label>Fuso horário<select value={preferences.timezone} onChange={(event) => setPreferences({ ...preferences, timezone: event.target.value as UserPreferences["timezone"] })}><option value="America/Fortaleza">Fortaleza (GMT−3)</option></select></label><label>Início da semana<select value={preferences.weekStartsOn} onChange={(event) => setPreferences({ ...preferences, weekStartsOn: event.target.value as UserPreferences["weekStartsOn"] })}><option value="segunda">Segunda-feira</option><option value="domingo">Domingo</option></select></label><label className="toggle-setting"><input type="checkbox" checked={preferences.browserNotifications} onChange={(event) => setPreferences({ ...preferences, browserNotifications: event.target.checked })} />Mostrar notificações no navegador</label><button className="primary-button" disabled={saving}>{saving ? "Salvando…" : "Salvar configurações"}</button></form>{message && <p className="notice">{message}</p>}</section>;
 }
 
-export function ProfilePage() {
+export function ProfilePage({ onProfileUpdated }: { onProfileUpdated?: (profile: UserProfile) => void }) {
   const [profile, setProfile] = useState<UserProfile>({ name: "", email: "", role: "" });
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   useEffect(() => { void loadUserProfile().then(setProfile).catch((error: Error) => setMessage(error.message)); }, []);
   async function submit(event: FormEvent) {
     event.preventDefault(); setSaving(true); setMessage("");
-    try { await saveUserProfileName(profile.name); setMessage("Nome do perfil atualizado."); }
+    try { await saveUserProfileName(profile.name); onProfileUpdated?.(profile); setMessage("Nome do perfil atualizado."); }
     catch (error) { setMessage(error instanceof Error ? error.message : "Não foi possível atualizar o perfil."); }
     finally { setSaving(false); }
   }
