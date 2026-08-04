@@ -25,6 +25,7 @@ import { loadUserProfile, type UserProfile } from "./userPreferencesRepository";
 
 type Status = "Pendente" | "Em aprovação" | "Aprovado" | "Executado";
 type Task = { id: string | number; title: string; description?: string; company: "ITP" | "Locabox"; category: string; start?: string; due: string; owner: string; value: number; status: Status; priority: "Alta" | "Média" | "Baixa"; listId: string; taskType: "Tarefa" | "Aprovação" | "Financeiro" };
+type SavedTaskView = { id: number; name: string; mode: "Lista" | "Quadro" | "Calendário" | "Gantt"; status: "Todos" | Status; company: "Todas" | Task["company"]; priority: "Todas" | Task["priority"]; order: "recentes" | "valor" | "vencimento"; groupBy: "Nenhum" | "Status" | "Prioridade" | "Empresa" };
 type CreateTarget = "canal" | "mensagem" | "departamento" | "pasta" | "lista";
 type WorkspaceList = { id: string; name: string };
 type DepartmentFolder = { id: string; name: string; lists: WorkspaceList[] };
@@ -134,6 +135,7 @@ function Workspace() {
     { author: "Marina Alves", initials: "MA", time: "09:18", text: "Vou validar as retenções antes de enviar para aprovação." },
   ]);
   const [taskView, setTaskView] = usePersistentState<"Lista" | "Quadro" | "Calendário" | "Gantt">("itp-financeiro-task-view", "Lista");
+  const [savedTaskViews, setSavedTaskViews] = usePersistentState<SavedTaskView[]>("itp-financeiro-saved-task-views", []);
   const [calendarCursor, setCalendarCursor] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [usesRemoteTasks, setUsesRemoteTasks] = useState(false);
@@ -431,6 +433,16 @@ function Workspace() {
         .finally(() => setSavingDocumentIds((ids) => ids.filter((item) => item !== id)));
     }, 700);
   };
+  const createSavedTaskView = () => {
+    const name = window.prompt("Nome da nova visualização:");
+    if (!name?.trim()) return;
+    setSavedTaskViews((current) => [...current, { id: Date.now(), name: name.trim(), mode: taskView, status: filter, company: companyFilter, priority: priorityFilter, order: taskOrder, groupBy: taskGroupBy }]);
+    setNotice(`Visualização “${name.trim()}” salva neste navegador.`);
+  };
+  const applySavedTaskView = (view: SavedTaskView) => {
+    setTaskView(view.mode); setFilter(view.status); setCompanyFilter(view.company); setPriorityFilter(view.priority); setTaskOrder(view.order); setTaskGroupBy(view.groupBy);
+    setNotice(`Visualização “${view.name}” aplicada.`);
+  };
 
   return <main className="app-shell">
     <aside className={sidebarCollapsed ? "sidebar collapsed" : "sidebar"}>
@@ -481,7 +493,7 @@ function Workspace() {
         <div className="channel-summary"><span className="channel-icon"><MessageCircle size={18} /></span><p className="eyebrow">{channelName === "Geral" ? "DEPARTAMENTO / FINANCEIRO" : "MENSAGEM DIRETA"}</p><h2>{channelName === "Geral" ? "# Geral" : channelName}</h2><p>{channelName === "Geral" ? "Canal geral para alinhamentos e comunicação da equipe financeira." : "Conversa direta entre membros da equipe."}</p><button className="text-button" onClick={() => { setChannelOpen(!channelOpen); setSection(channelOpen ? "Visão geral" : "Canais"); }}>{channelOpen ? "Voltar ao painel" : "Abrir canal"}</button>{channelOpen && usesRemoteTasks && activeChannelId && activeChannelIsPrivate && <button className="secondary-button channel-members-button" onClick={() => void openChannelMembers()}><Users size={16}/>Membros</button>}</div>
         <div className="channel-thread"><div className="channel-thread-header"><strong>{channelOpen ? "Conversas" : "Últimas mensagens"}</strong><span>{messages.length} mensagens</span></div>{messages.map((message, index) => <div className="message" key={`${message.author}-${index}`}><span className="avatar">{message.initials}</span><div><strong>{message.author} <small>{message.time}</small></strong><p>{message.text}</p></div></div>)}<form className="message-compose" onSubmit={sendChannelMessage}><input value={channelMessage} onChange={(event) => setChannelMessage(event.target.value)} placeholder={channelName === "Geral" ? "Responder no canal geral" : `Mensagem para ${channelName}`} /><button aria-label="Enviar mensagem"><Send size={16}/></button></form></div>
       </section>
-      {!channelOpen && <section className="views-studio"><div className="views-heading"><div><p className="eyebrow">DEPARTAMENTO / FINANCEIRO</p><h2>Visões de tarefas</h2></div><div className="view-tabs">{(["Lista", "Quadro", "Calendário", "Gantt"] as const).map((view) => <button key={view} className={taskView === view ? "selected" : ""} onClick={() => setTaskView(view)}>{view}</button>)}<button className="new-view" onClick={() => setNotice("Nova visualização criada. A configuração será salva por departamento no Supabase.")}>+ Nova visão</button></div></div>
+      {!channelOpen && <section className="views-studio"><div className="views-heading"><div><p className="eyebrow">DEPARTAMENTO / FINANCEIRO</p><h2>Visões de tarefas</h2></div><div className="view-tabs">{(["Lista", "Quadro", "Calendário", "Gantt"] as const).map((view) => <button key={view} className={taskView === view ? "selected" : ""} onClick={() => setTaskView(view)}>{view}</button>)}{savedTaskViews.map((view) => <button key={view.id} title={`Aplicar ${view.name}`} onClick={() => applySavedTaskView(view)}>{view.name}</button>)}<button className="new-view" onClick={createSavedTaskView}>+ Nova visão</button></div></div>
         {taskView === "Lista" && <div className="task-groups">{Object.entries(taskGroups).map(([group, groupedTasks]) => <section key={group}><h3>{taskGroupBy === "Nenhum" ? "Atividades" : group}<small>{groupedTasks.length}</small></h3><div className="compact-list">{groupedTasks.map((task) => <div key={task.id}><span className={`priority ${task.priority.toLowerCase()}`}/><strong>{task.title}</strong><small>{task.owner} · {task.due}</small><span className={`status ${task.status.toLowerCase().replace(" ", "-")}`}>{task.status}</span></div>)}</div></section>)}</div>}
         {taskView === "Quadro" && <div className="kanban">{(["Pendente", "Em aprovação", "Aprovado", "Executado"] as Status[]).map((status) => <div className="kanban-column" key={status} onDragOver={(event) => event.preventDefault()} onDrop={() => void moveTaskToStatus(status)}><header><strong>{status}</strong><span>{visibleTasks.filter((task) => task.status === status).length}</span></header>{visibleTasks.filter((task) => task.status === status).map((task) => <article key={task.id} draggable onDragStart={() => setDraggedTaskId(task.id)} onDragEnd={() => setDraggedTaskId(null)}><span className={task.priority === "Alta" ? "tag red-tag" : "tag"}>{task.company}</span><strong>{task.title}</strong><p>{task.owner} · {task.due}</p></article>)}</div>)}</div>}
         {taskView === "Calendário" && <div className="calendar-view"><div className="calendar-title"><button className="secondary-button" onClick={() => setCalendarCursor((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>‹</button><strong>{calendarCursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</strong><button className="secondary-button" onClick={() => setCalendarCursor((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>›</button></div><div className="calendar-weekdays">{["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => <span key={day}>{day}</span>)}</div><div className="calendar-grid monthly">{calendarCells.map((day, index) => <div key={`${calendarCursor.toISOString()}-${index}`} className={day ? "calendar-day" : "calendar-day outside"}>{day && <><strong>{day}</strong>{visibleTasks.filter((task) => { const date = taskDate(task.due); return date?.getFullYear() === calendarCursor.getFullYear() && date.getMonth() === calendarCursor.getMonth() && date.getDate() === day; }).map((task) => <button key={task.id} className="calendar-task" onClick={() => setDetailTask(task)}>{task.title}</button>)}</>}</div>)}</div></div>}
