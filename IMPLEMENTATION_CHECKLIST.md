@@ -45,7 +45,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 
 ## 3. Tarefas e aprovações
 
-- [-] Criar tarefa em branco com lista, título, tipo e campos financeiros; persiste no Supabase quando autenticado e preserva o modo local.
+- [-] Criar tarefa em branco com lista, título, tipo, responsável real e campos financeiros; persiste no Supabase quando autenticado e preserva o modo local.
 - [-] Status, prioridade, responsável, vencimento, empresa, categoria e valor; status e os campos suportados persistem no Supabase quando autenticado.
 - [x] Aprovar ou devolver atividade; decisão, justificativa, aprovador e status persistem no Supabase quando autenticado.
 - [x] Filtro por status e busca local por título.

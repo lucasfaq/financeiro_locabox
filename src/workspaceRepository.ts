@@ -199,7 +199,7 @@ export async function loadFinancialTasks(): Promise<RemoteTask[] | null> {
   return (tasks ?? []).map((task) => toRemoteTask(task, companyNames.get(task.empresa_id)));
 }
 
-export async function createFinancialTask(task: CreateRemoteTask): Promise<RemoteTask> {
+export async function createFinancialTask(task: CreateRemoteTask, responsibleId?: string): Promise<RemoteTask> {
   if (!supabase) throw new Error("Supabase não está configurado.");
   const { data: authData, error: authError } = await supabase.auth.getUser();
   if (authError) throw authError;
@@ -208,7 +208,7 @@ export async function createFinancialTask(task: CreateRemoteTask): Promise<Remot
   if (companyError) throw companyError;
   if (!company) throw new Error(`Cadastre ou ative a empresa ${task.company} antes de criar atividades.`);
   const dueDate = /^\d{4}-\d{2}-\d{2}$/.test(task.due) ? task.due : null;
-  const { data, error } = await supabase.from("atividades_financeiras").insert({ empresa_id: company.id, lista_id: task.listId || null, titulo: task.title, valor_previsto: task.value, vencimento: dueDate, prioridade: priorityToDatabase[task.priority], status: statusToDatabase[task.status], tipo: typeToDatabase[task.taskType], criado_por: authData.user.id }).select("id,titulo,valor_previsto,vencimento,prioridade,status,responsavel_id,lista_id,tipo,empresa_id").single();
+  const { data, error } = await supabase.from("atividades_financeiras").insert({ empresa_id: company.id, lista_id: task.listId || null, titulo: task.title, valor_previsto: task.value, vencimento: dueDate, prioridade: priorityToDatabase[task.priority], status: statusToDatabase[task.status], tipo: typeToDatabase[task.taskType], responsavel_id: responsibleId || null, criado_por: authData.user.id }).select("id,titulo,valor_previsto,vencimento,prioridade,status,responsavel_id,lista_id,tipo,empresa_id").single();
   if (error) throw error;
   return toRemoteTask(data, company.nome);
 }
