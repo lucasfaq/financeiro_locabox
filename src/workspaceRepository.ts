@@ -25,12 +25,12 @@ const priorityToDatabase: Record<RemoteTask["priority"], string> = { Alta: "alta
 const typeFromDatabase: Record<string, RemoteTask["taskType"]> = { tarefa: "Tarefa", aprovacao: "Aprovação", financeiro: "Financeiro" };
 const typeToDatabase: Record<RemoteTask["taskType"], string> = { Tarefa: "tarefa", Aprovação: "aprovacao", Financeiro: "financeiro" };
 
-function formatDueDate(value: string | null): string {
+export function formatDueDate(value: string | null): string {
   if (!value) return "Sem prazo";
   return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`));
 }
 
-function toRemoteTask(row: { id: string; titulo: string; valor_previsto: number | string; vencimento: string | null; prioridade: string; status: string; responsavel_id: string | null; lista_id: string | null; tipo: string; empresa_id: string }, companyName: string | undefined): RemoteTask {
+export function toRemoteTask(row: { id: string; titulo: string; valor_previsto: number | string; vencimento: string | null; prioridade: string; status: string; responsavel_id: string | null; lista_id: string | null; tipo: string; empresa_id: string }, companyName: string | undefined): RemoteTask {
   const company = companyName === "Locabox" ? "Locabox" : "ITP";
   return { id: row.id, title: row.titulo, company, category: "Financeiro", due: formatDueDate(row.vencimento), owner: row.responsavel_id ? "Responsável da equipe" : "Não atribuído", value: Number(row.valor_previsto), status: statusFromDatabase[row.status] ?? "Pendente", priority: priorityFromDatabase[row.prioridade] ?? "Média", listId: row.lista_id ?? "", taskType: typeFromDatabase[row.tipo] ?? "Tarefa" };
 }
