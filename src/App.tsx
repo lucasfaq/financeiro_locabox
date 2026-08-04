@@ -58,6 +58,9 @@ function Workspace() {
   const [showArchived, setShowArchived] = useState(false);
   const [section, setSection] = useState("Visão geral");
   const [filter, setFilter] = useState<"Todos" | Status>("Todos");
+  const [companyFilter, setCompanyFilter] = useState<"Todas" | Task["company"]>("Todas");
+  const [priorityFilter, setPriorityFilter] = useState<"Todas" | Task["priority"]>("Todas");
+  const [taskOrder, setTaskOrder] = useState<"recentes" | "valor" | "vencimento">("recentes");
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState("");
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
@@ -204,7 +207,7 @@ function Workspace() {
       ...workspaceUsers.filter((user) => user.name.toLowerCase().includes(query)).map((user) => ({ kind: "Pessoa", label: user.name, action: () => { setSection("Equipe"); setGlobalSearchOpen(false); } })),
     ].slice(0, 12);
   }, [channels, documents, globalSearch, remoteChannels, tasks, templates, workspaceUsers]);
-  const visibleTasks = useMemo(() => tasks.filter((task) => (filter === "Todos" || task.status === filter) && task.title.toLowerCase().includes(search.toLowerCase()) && (!selectedListId || (task.listId || "financeiro-pagamentos") === selectedListId)), [tasks, filter, search, selectedListId]);
+  const visibleTasks = useMemo(() => tasks.filter((task) => (filter === "Todos" || task.status === filter) && (companyFilter === "Todas" || task.company === companyFilter) && (priorityFilter === "Todas" || task.priority === priorityFilter) && task.title.toLowerCase().includes(search.toLowerCase()) && (!selectedListId || (task.listId || "financeiro-pagamentos") === selectedListId)).sort((a, b) => taskOrder === "valor" ? b.value - a.value : taskOrder === "vencimento" ? (taskDate(a.due)?.getTime() ?? Number.MAX_SAFE_INTEGER) - (taskDate(b.due)?.getTime() ?? Number.MAX_SAFE_INTEGER) : 0), [tasks, filter, companyFilter, priorityFilter, taskOrder, search, selectedListId]);
   const approvalTasks = tasks.filter((task) => task.status === "Em aprovação");
   const calendarCells = useMemo(() => {
     const year = calendarCursor.getFullYear(); const month = calendarCursor.getMonth();
@@ -365,6 +368,7 @@ function Workspace() {
   };
 
   return <main className="app-shell">
+    <div className="task-filter-console"><label>Empresa<select value={companyFilter} onChange={(event) => setCompanyFilter(event.target.value as typeof companyFilter)}><option>Todas</option><option>ITP</option><option>Locabox</option></select></label><label>Prioridade<select value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value as typeof priorityFilter)}><option>Todas</option><option>Alta</option><option>Média</option><option>Baixa</option></select></label><label>Ordenar<select value={taskOrder} onChange={(event) => setTaskOrder(event.target.value as typeof taskOrder)}><option value="recentes">Mais recentes</option><option value="vencimento">Vencimento</option><option value="valor">Maior valor</option></select></label></div>
     <aside className="sidebar">
       <div className="brand"><div className="brand-mark">L</div><div><strong>ITP <span>/</span> Locabox</strong><small>Gestão financeira</small></div></div>
       <nav>
