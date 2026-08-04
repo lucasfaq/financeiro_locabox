@@ -22,14 +22,14 @@ import { supabase } from "./supabaseClient";
 import { askFinanceiroAssistant } from "./assistantClient";
 
 type Status = "Pendente" | "Em aprovação" | "Aprovado" | "Executado";
-type Task = { id: string | number; title: string; company: "ITP" | "Locabox"; category: string; due: string; owner: string; value: number; status: Status; priority: "Alta" | "Média" | "Baixa"; listId: string; taskType: "Tarefa" | "Aprovação" | "Financeiro" };
+type Task = { id: string | number; title: string; company: "ITP" | "Locabox"; category: string; start?: string; due: string; owner: string; value: number; status: Status; priority: "Alta" | "Média" | "Baixa"; listId: string; taskType: "Tarefa" | "Aprovação" | "Financeiro" };
 type CreateTarget = "canal" | "mensagem" | "departamento" | "pasta" | "lista";
 type WorkspaceList = { id: string; name: string };
 type DepartmentFolder = { id: string; name: string; lists: WorkspaceList[] };
 type EntityMenu = { kind: "departamento" | "pasta"; department: string; folderId?: string };
 
 const initialTasks: Task[] = [
-  { id: 1, title: "Aprovar pagamento de fornecedor", company: "ITP", category: "Fornecedores", due: "Hoje", owner: "Marina", value: 28450, status: "Em aprovação", priority: "Alta", listId: "financeiro-pagamentos", taskType: "Aprovação" },
+  { id: 1, title: "Aprovar pagamento de fornecedor", company: "ITP", category: "Fornecedores", start: "01 ago", due: "Hoje", owner: "Marina", value: 28450, status: "Em aprovação", priority: "Alta", listId: "financeiro-pagamentos", taskType: "Aprovação" },
   { id: 2, title: "Conferir retenções da medição 08", company: "ITP", category: "Obras", due: "Hoje", owner: "Carlos", value: 12800, status: "Pendente", priority: "Alta", listId: "financeiro-pagamentos", taskType: "Financeiro" },
   { id: 3, title: "Programar aluguel de setembro", company: "Locabox", category: "Locações", due: "05 ago", owner: "Marina", value: 18600, status: "Pendente", priority: "Média", listId: "financeiro-receber", taskType: "Financeiro" },
   { id: 4, title: "Validar reembolso de deslocamento", company: "Locabox", category: "Despesas", due: "06 ago", owner: "Ana", value: 1870, status: "Em aprovação", priority: "Média", listId: "financeiro-pagamentos", taskType: "Aprovação" },
@@ -51,6 +51,14 @@ const taskDate = (due: string) => {
   if (brazilian) return new Date(Number(brazilian[3]), Number(brazilian[2]) - 1, Number(brazilian[1]), 12);
   const short = due.match(/^(\d{1,2})\s+ago$/i);
   return short ? new Date(new Date().getFullYear(), 7, Number(short[1]), 12) : null;
+};
+const ganttStyle = (task: { start?: string; due: string }) => {
+  const start = taskDate(task.start ?? task.due) ?? taskDate(task.due);
+  const due = taskDate(task.due) ?? start;
+  if (!start || !due) return { marginLeft: "0%", width: "8%" };
+  const startDay = Math.max(1, Math.min(31, start.getDate()));
+  const duration = Math.max(1, Math.round((due.getTime() - start.getTime()) / 86_400_000) + 1);
+  return { marginLeft: `${((startDay - 1) / 31) * 100}%`, width: `${Math.min(100 - ((startDay - 1) / 31) * 100, (duration / 31) * 100)}%` };
 };
 
 function Workspace() {
@@ -432,7 +440,7 @@ function Workspace() {
         {taskView === "Lista" && <div className="compact-list">{tasks.map((task) => <div key={task.id}><span className={`priority ${task.priority.toLowerCase()}`}/><strong>{task.title}</strong><small>{task.owner} · {task.due}</small><span className={`status ${task.status.toLowerCase().replace(" ", "-")}`}>{task.status}</span></div>)}</div>}
         {taskView === "Quadro" && <div className="kanban">{(["Pendente", "Em aprovação", "Aprovado", "Executado"] as Status[]).map((status) => <div className="kanban-column" key={status} onDragOver={(event) => event.preventDefault()} onDrop={() => void moveTaskToStatus(status)}><header><strong>{status}</strong><span>{tasks.filter((task) => task.status === status).length}</span></header>{tasks.filter((task) => task.status === status).map((task) => <article key={task.id} draggable onDragStart={() => setDraggedTaskId(task.id)} onDragEnd={() => setDraggedTaskId(null)}><span className={task.priority === "Alta" ? "tag red-tag" : "tag"}>{task.company}</span><strong>{task.title}</strong><p>{task.owner} · {task.due}</p></article>)}</div>)}</div>}
         {taskView === "Calendário" && <div className="calendar-view"><div className="calendar-title"><button className="secondary-button" onClick={() => setCalendarCursor((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>‹</button><strong>{calendarCursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</strong><button className="secondary-button" onClick={() => setCalendarCursor((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>›</button></div><div className="calendar-weekdays">{["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => <span key={day}>{day}</span>)}</div><div className="calendar-grid monthly">{calendarCells.map((day, index) => <div key={`${calendarCursor.toISOString()}-${index}`} className={day ? "calendar-day" : "calendar-day outside"}>{day && <><strong>{day}</strong>{tasks.filter((task) => { const date = taskDate(task.due); return date?.getFullYear() === calendarCursor.getFullYear() && date.getMonth() === calendarCursor.getMonth() && date.getDate() === day; }).map((task) => <button key={task.id} className="calendar-task" onClick={() => setDetailTask(task)}>{task.title}</button>)}</>}</div>)}</div></div>}
-        {taskView === "Gantt" && <div className="gantt-view"><div className="gantt-scale"><span>03 ago</span><span>05 ago</span><span>07 ago</span><span>11 ago</span></div>{tasks.map((task, index) => <div className="gantt-row" key={task.id}><strong>{task.title}</strong><div><i style={{ marginLeft: `${index * 12}%`, width: `${34 + (index % 3) * 12}%` }}>{task.status}</i></div></div>)}</div>}
+        {taskView === "Gantt" && <div className="gantt-view"><div className="gantt-scale"><span>01 ago</span><span>11 ago</span><span>21 ago</span><span>31 ago</span></div>{tasks.map((task) => <div className="gantt-row" key={task.id}><strong>{task.title}</strong><div><i style={ganttStyle(task)}>{task.status}</i></div></div>)}</div>}
       </section>}
       </div>
     </section>

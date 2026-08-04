@@ -4,7 +4,7 @@ export type RemoteList = { id: string; name: string };
 export type RemoteFolder = { id: string; name: string; lists: RemoteList[] };
 export type RemoteDepartment = { id: string; name: string; folders: RemoteFolder[] };
 export type RemoteTaskStatus = "Pendente" | "Em aprovação" | "Aprovado" | "Executado";
-export type RemoteTask = { id: string; title: string; company: "ITP" | "Locabox"; category: string; due: string; owner: string; value: number; status: RemoteTaskStatus; priority: "Alta" | "Média" | "Baixa"; listId: string; taskType: "Tarefa" | "Aprovação" | "Financeiro" };
+export type RemoteTask = { id: string; title: string; company: "ITP" | "Locabox"; category: string; start?: string; due: string; owner: string; value: number; status: RemoteTaskStatus; priority: "Alta" | "Média" | "Baixa"; listId: string; taskType: "Tarefa" | "Aprovação" | "Financeiro" };
 export type CreateRemoteTask = Omit<RemoteTask, "id">;
 export type UpdateRemoteTask = Pick<RemoteTask, "title" | "due" | "value" | "priority" | "status" | "taskType">;
 export type RemoteSubtask = { id: string; title: string; done: boolean };
@@ -30,9 +30,9 @@ export function formatDueDate(value: string | null): string {
   return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`));
 }
 
-export function toRemoteTask(row: { id: string; titulo: string; valor_previsto: number | string; vencimento: string | null; prioridade: string; status: string; responsavel_id: string | null; lista_id: string | null; tipo: string; empresa_id: string }, companyName: string | undefined): RemoteTask {
+export function toRemoteTask(row: { id: string; titulo: string; valor_previsto: number | string; inicio?: string | null; vencimento: string | null; prioridade: string; status: string; responsavel_id: string | null; lista_id: string | null; tipo: string; empresa_id: string }, companyName: string | undefined): RemoteTask {
   const company = companyName === "Locabox" ? "Locabox" : "ITP";
-  return { id: row.id, title: row.titulo, company, category: "Financeiro", due: formatDueDate(row.vencimento), owner: row.responsavel_id ? "Responsável da equipe" : "Não atribuído", value: Number(row.valor_previsto), status: statusFromDatabase[row.status] ?? "Pendente", priority: priorityFromDatabase[row.prioridade] ?? "Média", listId: row.lista_id ?? "", taskType: typeFromDatabase[row.tipo] ?? "Tarefa" };
+  return { id: row.id, title: row.titulo, company, category: "Financeiro", start: row.inicio ? formatDueDate(row.inicio) : undefined, due: formatDueDate(row.vencimento), owner: row.responsavel_id ? "Responsável da equipe" : "Não atribuído", value: Number(row.valor_previsto), status: statusFromDatabase[row.status] ?? "Pendente", priority: priorityFromDatabase[row.prioridade] ?? "Média", listId: row.lista_id ?? "", taskType: typeFromDatabase[row.tipo] ?? "Tarefa" };
 }
 
 export async function loadWorkspaceHierarchy(): Promise<RemoteDepartment[] | null> {
@@ -217,7 +217,7 @@ export async function loadFinancialTasks(): Promise<RemoteTask[] | null> {
   if (!supabase) return null;
   const { data: companies, error: companyError } = await supabase.from("empresas").select("id,nome").eq("ativo", true);
   if (companyError) throw companyError;
-  const { data: tasks, error: taskError } = await supabase.from("atividades_financeiras").select("id,titulo,valor_previsto,vencimento,prioridade,status,responsavel_id,lista_id,tipo,empresa_id").is("arquivada_em", null).order("created_at", { ascending: false });
+  const { data: tasks, error: taskError } = await supabase.from("atividades_financeiras").select("id,titulo,valor_previsto,inicio,vencimento,prioridade,status,responsavel_id,lista_id,tipo,empresa_id").is("arquivada_em", null).order("created_at", { ascending: false });
   if (taskError) throw taskError;
   const companyNames = new Map((companies ?? []).map((company) => [company.id, company.nome]));
   return (tasks ?? []).map((task) => toRemoteTask(task, companyNames.get(task.empresa_id)));
