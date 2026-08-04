@@ -146,7 +146,7 @@ Esta varredura foi realizada em modo somente leitura, em uma sessão autenticada
 - [ ] Compositor de canais com comandos, emoji, GIF e anexos.
 - [-] Gestão visível de membros de canais privados concluída; integração de chamada segue pendente se confirmada como requisito.
 - [ ] Importação de templates e criação de instância a partir de lista/pasta/espaço/documento.
-- [-] Perfil do usuário e preferências persistem por usuário; recolhimento da barra lateral permanece pendente.
+- [x] Perfil do usuário, preferências persistentes por usuário e recolhimento da barra lateral.
 
 ### Exclusões deliberadas do MVP atual
 

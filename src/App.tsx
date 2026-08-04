@@ -124,6 +124,7 @@ function Workspace() {
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [usesRemoteTasks, setUsesRemoteTasks] = useState(false);
   const [draggedTaskId, setDraggedTaskId] = useState<Task["id"] | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = usePersistentState("itp-financeiro-sidebar-collapsed", false);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -393,8 +394,8 @@ function Workspace() {
   };
 
   return <main className="app-shell">
-    <aside className="sidebar">
-      <div className="brand"><div className="brand-mark">L</div><div><strong>ITP <span>/</span> Locabox</strong><small>Gestão financeira</small></div></div>
+    <aside className={sidebarCollapsed ? "sidebar collapsed" : "sidebar"}>
+      <div className="brand"><div className="brand-mark">L</div><div><strong>ITP <span>/</span> Locabox</strong><small>Gestão financeira</small></div><button className="sidebar-toggle" aria-label={sidebarCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"} onClick={() => setSidebarCollapsed((current) => !current)}>{sidebarCollapsed ? "›" : "‹"}</button></div>
       <nav>
         {[{ label: "Visão geral", icon: LayoutDashboard }, { label: "Caixa de Entrada", icon: Bell }, { label: "Atividades", icon: ClipboardList }, { label: "Aprovações", icon: ShieldCheck }, { label: "Calendário", icon: CalendarDays }, { label: "Documentos", icon: FileText }, { label: "Templates", icon: FileText }].map(({ label, icon: Icon }) => <button key={label} className={section === label ? "nav-link active" : "nav-link"} onClick={() => { setSection(label); setChannelOpen(false); }}><Icon size={18} />{label}{label === "Aprovações" && approvalTasks.length > 0 && <b>{approvalTasks.length}</b>}</button>)}
       </nav>
