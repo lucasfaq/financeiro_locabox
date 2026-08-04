@@ -219,6 +219,12 @@ export async function updateFinancialTaskStatus(id: string, status: RemoteTaskSt
   if (error) throw error;
 }
 
+export async function archiveFinancialTask(id: string, archived = true): Promise<void> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const { error } = await supabase.from("atividades_financeiras").update({ arquivada_em: archived ? new Date().toISOString() : null }).eq("id", id);
+  if (error) throw error;
+}
+
 export async function decideFinancialApproval(taskId: string, decision: "aprovado" | "devolvido", justification: string | null): Promise<void> {
   if (!supabase) throw new Error("Supabase não está configurado.");
   const userId = await getCurrentUserId();
