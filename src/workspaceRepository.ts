@@ -6,7 +6,7 @@ export type RemoteDepartment = { id: string; name: string; folders: RemoteFolder
 export type RemoteTaskStatus = "Pendente" | "Em aprovação" | "Aprovado" | "Executado";
 export type RemoteTask = { id: string; title: string; company: "ITP" | "Locabox"; category: string; start?: string; due: string; owner: string; value: number; status: RemoteTaskStatus; priority: "Alta" | "Média" | "Baixa"; listId: string; taskType: "Tarefa" | "Aprovação" | "Financeiro" };
 export type CreateRemoteTask = Omit<RemoteTask, "id">;
-export type UpdateRemoteTask = Pick<RemoteTask, "title" | "due" | "value" | "priority" | "status" | "taskType">;
+export type UpdateRemoteTask = Pick<RemoteTask, "title" | "start" | "due" | "value" | "priority" | "status" | "taskType">;
 export type RemoteSubtask = { id: string; title: string; done: boolean };
 export type RemoteComment = { id: string; content: string; author: string };
 export type RemoteAttachment = { id: string; name: string; path: string; mimeType: string | null; size: number | null };
@@ -227,7 +227,7 @@ export async function loadArchivedFinancialTasks(): Promise<RemoteTask[] | null>
   if (!supabase) return null;
   const { data: companies, error: companyError } = await supabase.from("empresas").select("id,nome").eq("ativo", true);
   if (companyError) throw companyError;
-  const { data: tasks, error: taskError } = await supabase.from("atividades_financeiras").select("id,titulo,valor_previsto,vencimento,prioridade,status,responsavel_id,lista_id,tipo,empresa_id").not("arquivada_em", "is", null).order("arquivada_em", { ascending: false });
+  const { data: tasks, error: taskError } = await supabase.from("atividades_financeiras").select("id,titulo,valor_previsto,inicio,vencimento,prioridade,status,responsavel_id,lista_id,tipo,empresa_id").not("arquivada_em", "is", null).order("arquivada_em", { ascending: false });
   if (taskError) throw taskError;
   const companyNames = new Map((companies ?? []).map((company) => [company.id, company.nome]));
   return (tasks ?? []).map((task) => toRemoteTask(task, companyNames.get(task.empresa_id)));
@@ -241,8 +241,9 @@ export async function createFinancialTask(task: CreateRemoteTask, responsibleId?
   const { data: company, error: companyError } = await supabase.from("empresas").select("id,nome").eq("ativo", true).eq("nome", task.company).maybeSingle();
   if (companyError) throw companyError;
   if (!company) throw new Error(`Cadastre ou ative a empresa ${task.company} antes de criar atividades.`);
+  const startDate = task.start && /^\d{4}-\d{2}-\d{2}$/.test(task.start) ? task.start : null;
   const dueDate = /^\d{4}-\d{2}-\d{2}$/.test(task.due) ? task.due : null;
-  const { data, error } = await supabase.from("atividades_financeiras").insert({ empresa_id: company.id, lista_id: task.listId || null, titulo: task.title, valor_previsto: task.value, vencimento: dueDate, prioridade: priorityToDatabase[task.priority], status: statusToDatabase[task.status], tipo: typeToDatabase[task.taskType], responsavel_id: responsibleId || null, criado_por: authData.user.id }).select("id,titulo,valor_previsto,vencimento,prioridade,status,responsavel_id,lista_id,tipo,empresa_id").single();
+  const { data, error } = await supabase.from("atividades_financeiras").insert({ empresa_id: company.id, lista_id: task.listId || null, titulo: task.title, valor_previsto: task.value, inicio: startDate, vencimento: dueDate, prioridade: priorityToDatabase[task.priority], status: statusToDatabase[task.status], tipo: typeToDatabase[task.taskType], responsavel_id: responsibleId || null, criado_por: authData.user.id }).select("id,titulo,valor_previsto,inicio,vencimento,prioridade,status,responsavel_id,lista_id,tipo,empresa_id").single();
   if (error) throw error;
   return toRemoteTask(data, company.nome);
 }
@@ -255,8 +256,9 @@ export async function updateFinancialTaskStatus(id: string, status: RemoteTaskSt
 
 export async function updateFinancialTask(id: string, task: UpdateRemoteTask): Promise<void> {
   if (!supabase) throw new Error("Supabase não está configurado.");
+  const startDate = task.start && /^\d{4}-\d{2}-\d{2}$/.test(task.start) ? task.start : null;
   const dueDate = /^\d{4}-\d{2}-\d{2}$/.test(task.due) ? task.due : null;
-  const { error } = await supabase.from("atividades_financeiras").update({ titulo: task.title, vencimento: dueDate, valor_previsto: task.value, prioridade: priorityToDatabase[task.priority], status: statusToDatabase[task.status], tipo: typeToDatabase[task.taskType] }).eq("id", id);
+  const { error } = await supabase.from("atividades_financeiras").update({ titulo: task.title, inicio: startDate, vencimento: dueDate, valor_previsto: task.value, prioridade: priorityToDatabase[task.priority], status: statusToDatabase[task.status], tipo: typeToDatabase[task.taskType] }).eq("id", id);
   if (error) throw error;
 }
 

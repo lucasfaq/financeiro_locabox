@@ -51,7 +51,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [x] Filtro por status e busca local por título.
 - [x] Visões locais: Lista, Quadro, Calendário e Gantt.
 - [-] Aba “A partir de template” leva à biblioteca, sem preencher uma tarefa a partir do modelo.
-- [-] Calendário mensal usa datas reais de vencimento; Gantt continua demonstrativo, sem intervalos e dependências reais.
+- [-] Calendário mensal usa datas reais de vencimento; Gantt exibe intervalos com início e vencimento reais, sem dependências e progresso agregado.
 - [-] Página/painel de detalhe com subtarefas, comentários e anexos privados persistidos para atividades autenticadas; recursos avançados continuam pendentes.
 - [-] Subtarefas, comentários e metadados de anexos persistentes modelados no Supabase; descrição rica, responsáveis múltiplos, etiquetas e dependências continuam pendentes.
 - [ ] Datas reais de início, vencimento, recorrência e alertas.
@@ -146,7 +146,7 @@ Esta varredura foi realizada em modo somente leitura, em uma sessão autenticada
 - [ ] Compositor de canais com comandos, emoji, GIF e anexos.
 - [-] Gestão visível de membros de canais privados concluída; integração de chamada segue pendente se confirmada como requisito.
 - [ ] Importação de templates e criação de instância a partir de lista/pasta/espaço/documento.
-- [ ] Perfil do usuário, preferências e recolhimento da barra lateral.
+- [-] Perfil do usuário e preferências persistem por usuário; recolhimento da barra lateral permanece pendente.
 
 ### Exclusões deliberadas do MVP atual
 
