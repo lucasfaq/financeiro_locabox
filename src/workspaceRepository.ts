@@ -14,6 +14,8 @@ export type RemoteChannelMember = { userId: string };
 export type RemoteWorkspaceUser = { id: string; name: string };
 export type RemoteChannelMessage = { id: string; content: string; author: string };
 export type RemoteNotification = { id: string; kind: "Tarefa" | "Mensagem"; title: string; detail: string; time: string; priority: boolean; read: boolean };
+export type RemoteWorkspaceDocument = { id: string; title: string; body: string; updated: string };
+export type RemoteWorkspaceTemplate = { id: string; name: string; category: string; description: string };
 
 const statusFromDatabase: Record<string, RemoteTaskStatus> = { rascunho: "Pendente", pendente: "Pendente", em_aprovacao: "Em aprovação", aprovado: "Aprovado", executado: "Executado", cancelado: "Pendente" };
 const statusToDatabase: Record<RemoteTaskStatus, string> = { Pendente: "pendente", "Em aprovação": "em_aprovacao", Aprovado: "aprovado", Executado: "executado" };
@@ -142,6 +144,49 @@ export async function clearReadNotifications(): Promise<void> {
   if (!supabase) throw new Error("Supabase não está configurado.");
   const { error } = await supabase.from("notificacoes").delete().not("lida_em", "is", null);
   if (error) throw error;
+}
+
+function formatUpdatedAt(value: string): string {
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
+}
+
+export async function loadWorkspaceDocuments(): Promise<RemoteWorkspaceDocument[] | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.from("documentos_trabalho").select("id,titulo,conteudo,updated_at").order("updated_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((document) => ({ id: document.id, title: document.titulo, body: document.conteudo, updated: formatUpdatedAt(document.updated_at) }));
+}
+
+export async function createWorkspaceDocument(): Promise<RemoteWorkspaceDocument> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const userId = await getCurrentUserId();
+  const { data, error } = await supabase.from("documentos_trabalho").insert({ titulo: "Sem título", conteudo: "", criado_por: userId }).select("id,titulo,conteudo,updated_at").single();
+  if (error) throw error;
+  return { id: data.id, title: data.titulo, body: data.conteudo, updated: formatUpdatedAt(data.updated_at) };
+}
+
+export async function updateWorkspaceDocument(id: string, patch: { title?: string; body?: string }): Promise<void> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const update: { titulo?: string; conteudo?: string; updated_at: string } = { updated_at: new Date().toISOString() };
+  if (patch.title !== undefined) update.titulo = patch.title || "Sem título";
+  if (patch.body !== undefined) update.conteudo = patch.body;
+  const { error } = await supabase.from("documentos_trabalho").update(update).eq("id", id);
+  if (error) throw error;
+}
+
+export async function loadWorkspaceTemplates(): Promise<RemoteWorkspaceTemplate[] | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.from("templates_trabalho").select("id,nome,categoria,descricao").order("updated_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((template) => ({ id: template.id, name: template.nome, category: template.categoria, description: template.descricao }));
+}
+
+export async function createWorkspaceTemplate(template: Omit<RemoteWorkspaceTemplate, "id">): Promise<RemoteWorkspaceTemplate> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const userId = await getCurrentUserId();
+  const { data, error } = await supabase.from("templates_trabalho").insert({ nome: template.name, categoria: template.category, descricao: template.description, criado_por: userId }).select("id,nome,categoria,descricao").single();
+  if (error) throw error;
+  return { id: data.id, name: data.nome, category: data.categoria, description: data.descricao };
 }
 
 export async function loadFinancialTasks(): Promise<RemoteTask[] | null> {

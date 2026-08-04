@@ -1,6 +1,6 @@
 import { CopyPlus, FileStack, LayoutTemplate, Plus } from "lucide-react";
 
-export type TaskTemplate = { id: number; name: string; category: string; description: string };
+export type TaskTemplate = { id: string | number; name: string; category: string; description: string };
 
 type Props = {
   templates: TaskTemplate[];

@@ -1,8 +1,8 @@
 import { FilePlus2, FileText, Search, Share2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-export type WorkspaceDocument = { id: number; title: string; body: string; updated: string };
-type Props = { documents: WorkspaceDocument[]; onCreate: () => void; onUpdate: (id: number, patch: Partial<WorkspaceDocument>) => void };
+export type WorkspaceDocument = { id: string | number; title: string; body: string; updated: string };
+type Props = { documents: WorkspaceDocument[]; onCreate: () => void; onUpdate: (id: string | number, patch: Partial<WorkspaceDocument>) => void };
 
 export function DocumentsWorkspace({ documents, onCreate, onUpdate }: Props) {
   const [query, setQuery] = useState("");

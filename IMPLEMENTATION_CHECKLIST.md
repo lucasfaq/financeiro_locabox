@@ -88,9 +88,9 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 ## 6. Caixa de entrada, busca e documentos
 
 - [-] Caixa de Entrada lê, recebe em tempo real e marca notificações reais para sessões autenticadas. Decisão de aprovação e atribuição de atividade geram notificações automáticas; solicitação de aprovação e menções permanecem pendentes.
-- [x] Biblioteca e editor simples de documentos locais.
-- [x] Templates locais para tarefa/processo/documento.
-- [-] Filtros de templates são visuais e a aplicação de template ainda não preenche a tarefa.
+- [-] Biblioteca e editor de documentos persistem no Supabase para sessões autenticadas, preservando fallback local sem conexão.
+- [-] Templates persistem no Supabase para sessões autenticadas, preservando fallback local sem conexão.
+- [-] Filtros de templates são visuais; aplicar um template agora preenche o título da nova tarefa, enquanto a instanciação completa da estrutura permanece pendente.
 - [ ] Caixa de Entrada consolidada com filtros: Todas, Principais, Outras, Mais tarde e Limpos.
 - [ ] Busca global de tarefas, listas, pessoas, mensagens e documentos.
 - [-] Documentos persistentes modelados; páginas, autosave, permissões e comentários pendentes.
