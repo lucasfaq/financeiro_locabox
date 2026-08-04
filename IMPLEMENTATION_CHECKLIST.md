@@ -56,7 +56,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [-] Subtarefas, comentários e metadados de anexos persistentes modelados no Supabase; descrição rica, responsáveis múltiplos, etiquetas e dependências continuam pendentes.
 - [ ] Datas reais de início, vencimento, recorrência e alertas.
 - [-] Comentários e subtarefas persistentes conectados à interface; menções e progresso calculado continuam pendentes.
-- [-] Subtarefas persistentes e progresso calculado: schema pronto, cálculo e integração pendentes.
+- [-] Subtarefas persistentes e progresso calculado no detalhe da atividade; agregação do progresso nas listas e visualizações permanece pendente.
 - [ ] Filtros avançados combináveis, ordenação, grupos e colunas configuráveis.
 - [-] Tarefas arquivadas podem ser consultadas e restauradas no painel inicial; visão completa em todas as listas continua pendente.
 - [ ] Aprovações com regras, alçadas, evidências e trilha de decisão.
@@ -108,13 +108,13 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 
 ## 8. Assistente de ChatGPT
 
-- [ ] Backend autenticado para o assistente.
-- [ ] Endpoint de sessão que mantém `OPENAI_API_KEY` somente no servidor.
-- [ ] Identidade estável do usuário e autorização por dados/empresa/departamento.
-- [ ] Interface do assistente no produto.
-- [ ] Ferramentas seguras: consultar tarefas, criar rascunhos, resumir e propor ações.
-- [ ] Confirmação humana antes de criar, editar, enviar, compartilhar ou excluir itens.
-- [ ] Logs de uso, limites de custo, avaliação de qualidade e política de retenção.
+- [x] Backend autenticado para o assistente via Edge Function `financeiro-assistant`.
+- [x] `OPENAI_API_KEY` mantida somente no servidor Supabase.
+- [-] Identidade estável pseudonimizada e contexto autorizado por RLS para tarefas, documentos e templates; segmentação institucional mais granular permanece pendente.
+- [x] Interface do assistente no produto.
+- [x] Ferramentas seguras: consulta, resumo e rascunhos somente leitura, sem ferramentas de escrita.
+- [x] Ações de criar, editar, enviar, compartilhar ou excluir não são expostas ao assistente nesta etapa.
+- [-] Logs técnicos, contexto e saída limitados; teto financeiro, avaliação de qualidade e política de retenção aguardam decisão institucional.
 
 > A integração não deve expor a chave de API no frontend. O padrão oficial prevê um endpoint de servidor autenticado que gera uma sessão/token temporário para a interface de chat. [Documentação do ChatKit](https://developers.openai.com/api/docs/guides/chatkit)
 
