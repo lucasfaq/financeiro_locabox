@@ -138,7 +138,7 @@ Esta varredura foi realizada em modo somente leitura, em uma sessão autenticada
 ### Itens revelados pela auditoria e incluídos neste checklist
 
 - [-] Busca global por tarefas, documentos, canais, templates e pessoas; filtros completos, mensagens, comentários e espaços pendem.
-- [ ] Atalhos de teclado e comando rápido para busca/navegação.
+- [-] Atalho Ctrl/Cmd + K abre a busca global e Escape fecha modais; comando rápido e navegação por resultados permanecem pendentes.
 - [-] Aba de tarefas arquivadas e restauração disponível no painel inicial; falta abrangê-la nas visualizações por lista.
 - [ ] Filtro da Caixa de Entrada e categorias Principais, Outras e Mais tarde.
 - [ ] Marcar tudo como lido e limpar tudo com dados reais.

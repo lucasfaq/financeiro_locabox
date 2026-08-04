@@ -107,6 +107,15 @@ function Workspace() {
   const [usesRemoteTasks, setUsesRemoteTasks] = useState(false);
 
   useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); setGlobalSearch(""); setGlobalSearchOpen(true); }
+      if (event.key === "Escape") { setGlobalSearchOpen(false); setDetailTask(null); }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  useEffect(() => {
     let active = true;
 
     void loadWorkspaceHierarchy()
@@ -368,7 +377,7 @@ function Workspace() {
       <div className="profile"><div className="avatar">MA</div><div><strong>Marina Alves</strong><small>Financeiro</small></div><ChevronDown size={16} /></div>
     </aside>
     <section className="workspace">
-      <header><div><p className="eyebrow">{selectedList ? `${selectedList.department.toUpperCase()} / ${selectedList.folder.toUpperCase()}` : `${activeDepartment.toUpperCase()} / AGOSTO 2026`}</p><h1>{selectedList ? selectedList.name : section}</h1></div><div className="header-actions"><button className="secondary-button global-search-button" onClick={() => { setGlobalSearch(""); setGlobalSearchOpen(true); }}><Search size={16}/>Buscar</button><button className="icon-button" aria-label="Notificações"><Bell size={19} /><i /></button><button className="primary-button" onClick={() => setShowModal(true)}><CirclePlus size={18} />Nova tarefa</button></div></header>
+      <header><div><p className="eyebrow">{selectedList ? `${selectedList.department.toUpperCase()} / ${selectedList.folder.toUpperCase()}` : `${activeDepartment.toUpperCase()} / AGOSTO 2026`}</p><h1>{selectedList ? selectedList.name : section}</h1></div><div className="header-actions"><button className="secondary-button global-search-button" onClick={() => { setGlobalSearch(""); setGlobalSearchOpen(true); }}><Search size={16}/>Buscar <kbd>Ctrl K</kbd></button><button className="icon-button" aria-label="Notificações"><Bell size={19} /><i /></button><button className="primary-button" onClick={() => setShowModal(true)}><CirclePlus size={18} />Nova tarefa</button></div></header>
       {notice && <div className="notice"><Check size={17} />{notice}</div>}
       {section === "Templates" && <TemplatesLibrary templates={templates} onSaveCurrent={() => { const template = { id: Date.now(), name: "Rotina de pagamentos", category: "Processo financeiro", description: "Lista, responsáveis e campos financeiros reutilizáveis." }; if (!usesRemoteTasks) { setTemplates((current) => [...current, template]); setNotice("Visão salva como template do departamento."); return; } void createWorkspaceTemplate(template).then((saved) => { setTemplates((current) => [saved, ...current]); setNotice("Template salvo para a equipe."); }).catch(() => setNotice("Não foi possível salvar o template compartilhado.")); }} onUse={(template) => { setTemplateForTask(template); setShowModal(true); setNotice(`Template “${template.name}” aplicado à nova tarefa.`); }} />}
       {section === "Caixa de Entrada" && <Inbox items={inboxItems} onMarkRead={(id) => { if (usesRemoteTasks && typeof id === "string") void markNotificationRead(id).catch(() => setNotice("Não foi possível marcar a notificação como lida.")); setInboxItems((current) => current.map((item) => item.id === id ? { ...item, read: true } : item)); }} onClearRead={() => { if (usesRemoteTasks) void clearReadNotifications().catch(() => setNotice("Não foi possível limpar notificações lidas.")); setInboxItems((current) => current.filter((item) => !item.read)); }} />}
