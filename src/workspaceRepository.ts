@@ -219,6 +219,12 @@ export async function createWorkspaceTemplate(template: Omit<RemoteWorkspaceTemp
   return { id: data.id, name: data.nome, category: data.categoria, description: data.descricao };
 }
 
+export async function updateWorkspaceTemplate(id: string, template: Omit<RemoteWorkspaceTemplate, "id">): Promise<void> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const { error } = await supabase.from("templates_trabalho").update({ nome: template.name, categoria: template.category, descricao: template.description, updated_at: new Date().toISOString() }).eq("id", id);
+  if (error) throw error;
+}
+
 export async function deleteWorkspaceTemplate(id: string): Promise<void> {
   if (!supabase) throw new Error("Supabase não está configurado.");
   const { error } = await supabase.from("templates_trabalho").delete().eq("id", id);
