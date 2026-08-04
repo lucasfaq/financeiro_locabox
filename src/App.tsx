@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bell, Building2, CalendarDays, Check, ChevronDown, ChevronRight, CirclePlus, ClipboardList, Clock3, FileText, Folder, Hash, LayoutDashboard, List, MessageCircle, MoreHorizontal, Search, Send, Settings, ShieldCheck, Sparkles, Users } from "lucide-react";
 import "./App.css";
 import "./Channel.css";
@@ -110,6 +110,9 @@ function Workspace() {
   const [documents, setDocuments] = usePersistentState<WorkspaceDocument[]>("itp-financeiro-documents", [
     { id: 1, title: "Rotina de pagamentos", body: "Registre aqui as decisões, documentos e pendências do processo de pagamentos.", updated: "hoje" },
   ]);
+  const documentsRef = useRef(documents);
+  const documentSaveTimers = useRef<Record<string, number>>({});
+  const [savingDocumentIds, setSavingDocumentIds] = useState<(string | number)[]>([]);
   const [channels, setChannels] = usePersistentState("itp-financeiro-channels", ["Geral"]);
   const [directMessages, setDirectMessages] = usePersistentState("itp-financeiro-direct-messages", ["Carlos Mendes"]);
   const [departments, setDepartments] = usePersistentState("itp-financeiro-departments", ["Financeiro", "Operações", "Engenharia"]);
@@ -172,6 +175,9 @@ function Workspace() {
 
     return () => { active = false; };
   }, [setActiveDepartment, setDepartmentFolders, setDepartments, setExpandedDepartment, setExpandedFolders, setTasks]);
+
+  useEffect(() => { documentsRef.current = documents; }, [documents]);
+  useEffect(() => () => { Object.values(documentSaveTimers.current).forEach((timer) => window.clearTimeout(timer)); }, []);
 
   useEffect(() => {
     const client = supabase;
@@ -401,6 +407,21 @@ function Workspace() {
     catch (error) { setAssistantError(error instanceof Error ? error.message : "Não foi possível consultar o assistente."); }
     finally { setAssistantLoading(false); }
   };
+  const saveDocumentDraft = (id: string | number, patch: Partial<WorkspaceDocument>) => {
+    const nextDocuments = documentsRef.current.map((document) => document.id === id ? { ...document, ...patch } : document);
+    const current = nextDocuments.find((document) => document.id === id);
+    if (!current) return;
+    documentsRef.current = nextDocuments;
+    setDocuments(nextDocuments);
+    if (!usesRemoteTasks || typeof id !== "string") return;
+    window.clearTimeout(documentSaveTimers.current[id]);
+    setSavingDocumentIds((ids) => ids.includes(id) ? ids : [...ids, id]);
+    documentSaveTimers.current[id] = window.setTimeout(() => {
+      void updateWorkspaceDocument(id, { title: current.title, body: current.body })
+        .catch(() => setNotice("Não foi possível salvar o documento compartilhado."))
+        .finally(() => setSavingDocumentIds((ids) => ids.filter((item) => item !== id)));
+    }, 700);
+  };
 
   return <main className="app-shell">
     <aside className={sidebarCollapsed ? "sidebar collapsed" : "sidebar"}>
@@ -429,7 +450,7 @@ function Workspace() {
       {notice && <div className="notice"><Check size={17} />{notice}</div>}
       {section === "Templates" && <TemplatesLibrary templates={templates} onSaveCurrent={() => { const template = { id: Date.now(), name: "Rotina de pagamentos", category: "Processo financeiro", description: "Lista, responsáveis e campos financeiros reutilizáveis." }; if (!usesRemoteTasks) { setTemplates((current) => [...current, template]); setNotice("Visão salva como template do departamento."); return; } void createWorkspaceTemplate(template).then((saved) => { setTemplates((current) => [saved, ...current]); setNotice("Template salvo para a equipe."); }).catch(() => setNotice("Não foi possível salvar o template compartilhado.")); }} onUse={(template) => { setTemplateForTask(template); setShowModal(true); setNotice(`Template “${template.name}” aplicado à nova tarefa.`); }} />}
       {section === "Caixa de Entrada" && <Inbox items={inboxItems} onMarkRead={(id) => { if (usesRemoteTasks && typeof id === "string") void markNotificationRead(id).catch(() => setNotice("Não foi possível marcar a notificação como lida.")); setInboxItems((current) => current.map((item) => item.id === id ? { ...item, read: true } : item)); }} onMarkAllRead={() => { if (usesRemoteTasks) void markAllNotificationsRead().catch(() => setNotice("Não foi possível marcar as notificações como lidas.")); setInboxItems((current) => current.map((item) => ({ ...item, read: true }))); }} onClearRead={() => { if (usesRemoteTasks) void clearReadNotifications().catch(() => setNotice("Não foi possível limpar notificações lidas.")); setInboxItems((current) => current.filter((item) => !item.read)); }} onSnooze={(id, until) => { if (usesRemoteTasks && typeof id === "string") void snoozeNotification(id, until).catch(() => setNotice("Não foi possível adiar a notificação.")); setInboxItems((current) => current.map((item) => item.id === id ? { ...item, snoozedUntil: until } : item)); }} />}
-      {section === "Documentos" && <DocumentsWorkspace documents={documents} onCreate={() => { if (!usesRemoteTasks) { setDocuments((current) => [...current, { id: Date.now(), title: "Sem título", body: "", updated: "agora" }]); return; } void createWorkspaceDocument().then((document) => setDocuments((current) => [document, ...current])).catch(() => setNotice("Não foi possível criar o documento compartilhado.")); }} onUpdate={(id, patch) => { setDocuments((current) => current.map((document) => document.id === id ? { ...document, ...patch } : document)); if (usesRemoteTasks && typeof id === "string") void updateWorkspaceDocument(id, { title: patch.title, body: patch.body }).catch(() => setNotice("Não foi possível salvar o documento compartilhado.")); }} />}
+      {section === "Documentos" && <DocumentsWorkspace documents={documents} savingIds={savingDocumentIds} onCreate={() => { if (!usesRemoteTasks) { setDocuments((current) => [...current, { id: Date.now(), title: "Sem título", body: "", updated: "agora" }]); return; } void createWorkspaceDocument().then((document) => setDocuments((current) => [document, ...current])).catch(() => setNotice("Não foi possível criar o documento compartilhado.")); }} onUpdate={saveDocumentDraft} />}
       {section === "Equipe" && <><AdminUsers /><OrganizationAssignments /></>}
       {section === "Empresas" && <CompaniesManagement />}
       {section === "Aprovações" && <ApprovalsPage tasks={approvalTasks} onDecide={(id, approved) => void decideApproval(id, approved)} />}

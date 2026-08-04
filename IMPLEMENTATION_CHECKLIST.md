@@ -93,7 +93,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [-] Filtros de templates são visuais; aplicar um template agora preenche o título da nova tarefa, enquanto a instanciação completa da estrutura permanece pendente.
 - [ ] Caixa de Entrada consolidada com filtros: Todas, Principais, Outras, Mais tarde e Limpos.
 - [-] Busca global encontra tarefas, documentos, templates, canais e pessoas; listas e mensagens continuam pendentes.
-- [-] Documentos persistentes modelados; páginas, autosave, permissões e comentários pendentes.
+- [-] Documentos persistentes com autosave e indicação de gravação; páginas, permissões e comentários pendentes.
 - [-] Bucket privado, upload, metadados e abertura por URL assinada conectados; pré-visualização continua pendente.
 - [-] Templates persistentes modelados; versionamento e uso para instanciar estruturas pendentes.
 
