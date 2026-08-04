@@ -76,10 +76,10 @@ function Workspace() {
   const [archivedTasks, setArchivedTasks] = useState<Task[]>([]);
   const [showArchived, setShowArchived] = useState(false);
   const [section, setSection] = useState("Visão geral");
-  const [filter, setFilter] = useState<"Todos" | Status>("Todos");
-  const [companyFilter, setCompanyFilter] = useState<"Todas" | Task["company"]>("Todas");
-  const [priorityFilter, setPriorityFilter] = useState<"Todas" | Task["priority"]>("Todas");
-  const [taskOrder, setTaskOrder] = useState<"recentes" | "valor" | "vencimento">("recentes");
+  const [filter, setFilter] = usePersistentState<"Todos" | Status>("itp-financeiro-status-filter", "Todos");
+  const [companyFilter, setCompanyFilter] = usePersistentState<"Todas" | Task["company"]>("itp-financeiro-company-filter", "Todas");
+  const [priorityFilter, setPriorityFilter] = usePersistentState<"Todas" | Task["priority"]>("itp-financeiro-priority-filter", "Todas");
+  const [taskOrder, setTaskOrder] = usePersistentState<"recentes" | "valor" | "vencimento">("itp-financeiro-task-order", "recentes");
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState("");
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
@@ -128,7 +128,7 @@ function Workspace() {
     { author: "Carlos Mendes", initials: "CA", time: "09:12", text: "Incluí a medição 08 para conferência. A tarefa já está vinculada a este canal." },
     { author: "Marina Alves", initials: "MA", time: "09:18", text: "Vou validar as retenções antes de enviar para aprovação." },
   ]);
-  const [taskView, setTaskView] = useState<"Lista" | "Quadro" | "Calendário" | "Gantt">("Lista");
+  const [taskView, setTaskView] = usePersistentState<"Lista" | "Quadro" | "Calendário" | "Gantt">("itp-financeiro-task-view", "Lista");
   const [calendarCursor, setCalendarCursor] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [usesRemoteTasks, setUsesRemoteTasks] = useState(false);

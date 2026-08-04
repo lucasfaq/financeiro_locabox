@@ -54,10 +54,10 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [-] Calendário mensal usa datas reais de vencimento; Gantt exibe intervalos com início e vencimento reais, sem dependências e progresso agregado.
 - [-] Página/painel de detalhe com subtarefas, comentários e anexos privados persistidos para atividades autenticadas; recursos avançados continuam pendentes.
 - [-] Subtarefas, comentários e metadados de anexos persistentes modelados no Supabase; descrição rica, responsáveis múltiplos, etiquetas e dependências continuam pendentes.
-- [ ] Datas reais de início, vencimento, recorrência e alertas.
+- [-] Datas reais de início e vencimento persistem; recorrência e alertas permanecem pendentes.
 - [-] Comentários e subtarefas persistentes conectados à interface; menções e progresso calculado continuam pendentes.
 - [-] Subtarefas persistentes e progresso calculado no detalhe da atividade; agregação do progresso nas listas e visualizações permanece pendente.
-- [ ] Filtros avançados combináveis, ordenação, grupos e colunas configuráveis.
+- [-] Filtros combináveis por status, empresa e prioridade, ordenação e visão selecionada persistem no navegador; grupos e colunas configuráveis permanecem pendentes.
 - [-] Tarefas arquivadas podem ser consultadas e restauradas no painel inicial; visão completa em todas as listas continua pendente.
 - [ ] Aprovações com regras, alçadas, evidências e trilha de decisão.
 
@@ -69,7 +69,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [ ] Configurar agrupamento, filtros, ordenação, colunas e campos por visualização.
 - [x] Quadro com arrastar e soltar entre status, persistido para sessões autenticadas.
 - [x] Calendário baseado em datas reais de vencimento.
-- [ ] Gantt com períodos, dependências e progresso reais.
+- [-] Gantt com período mensal selecionável e intervalos reais; dependências e progresso agregado permanecem pendentes.
 - [ ] Painéis por empresa/departamento com indicadores calculados.
 
 ## 5. Comunicação e colaboração
