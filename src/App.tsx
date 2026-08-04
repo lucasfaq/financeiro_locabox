@@ -17,7 +17,7 @@ import { AdminUsers } from "./AdminUsers";
 import { CompaniesManagement } from "./CompaniesManagement";
 import { OrganizationAssignments } from "./OrganizationAssignments";
 import { TaskDetail } from "./TaskDetail";
-import { addChannelMember, archiveFinancialTask, clearReadNotifications, createChannelMessage, createDirectMessage, createFinancialTask, createWorkspaceChannel, createWorkspaceDepartment, createWorkspaceDocument, createWorkspaceFolder, createWorkspaceList, createWorkspaceTemplate, decideFinancialApproval, loadActiveWorkspaceUsers, loadArchivedFinancialTasks, loadChannelMembers, loadChannelMessages, loadFinancialTasks, loadNotifications, loadWorkspaceChannels, loadWorkspaceDocuments, loadWorkspaceHierarchy, loadWorkspaceTemplates, markNotificationRead, removeChannelMember, snoozeNotification, updateFinancialTask, updateWorkspaceDocument, type RemoteChannelMember, type RemoteWorkspaceUser } from "./workspaceRepository";
+import { addChannelMember, archiveFinancialTask, clearReadNotifications, createChannelMessage, createDirectMessage, createFinancialTask, createWorkspaceChannel, createWorkspaceDepartment, createWorkspaceDocument, createWorkspaceFolder, createWorkspaceList, createWorkspaceTemplate, decideFinancialApproval, loadActiveWorkspaceUsers, loadArchivedFinancialTasks, loadChannelMembers, loadChannelMessages, loadFinancialTasks, loadNotifications, loadWorkspaceChannels, loadWorkspaceDocuments, loadWorkspaceHierarchy, loadWorkspaceTemplates, markNotificationRead, removeChannelMember, snoozeNotification, updateFinancialTask, updateFinancialTaskStatus, updateWorkspaceDocument, type RemoteChannelMember, type RemoteWorkspaceUser } from "./workspaceRepository";
 import { supabase } from "./supabaseClient";
 
 type Status = "Pendente" | "Em aprovação" | "Aprovado" | "Executado";
@@ -105,6 +105,7 @@ function Workspace() {
   const [calendarCursor, setCalendarCursor] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [usesRemoteTasks, setUsesRemoteTasks] = useState(false);
+  const [draggedTaskId, setDraggedTaskId] = useState<Task["id"] | null>(null);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -242,6 +243,14 @@ function Workspace() {
     setTasks((current) => current.map((item) => item.id === task.id ? updated : item));
     setDetailTask(updated);
     setNotice("Atividade atualizada.");
+  };
+  const moveTaskToStatus = async (status: Status) => {
+    const task = tasks.find((item) => item.id === draggedTaskId);
+    setDraggedTaskId(null);
+    if (!task || task.status === status) return;
+    if (usesRemoteTasks && typeof task.id === "string") { try { await updateFinancialTaskStatus(task.id, status); } catch { setNotice("Não foi possível mover a atividade compartilhada."); return; } }
+    setTasks((current) => current.map((item) => item.id === task.id ? { ...item, status } : item));
+    setNotice(`Atividade movida para ${status}.`);
   };
 
   const createTask = async (form: HTMLFormElement) => {
@@ -401,7 +410,7 @@ function Workspace() {
       </section>
       {!channelOpen && <section className="views-studio"><div className="views-heading"><div><p className="eyebrow">DEPARTAMENTO / FINANCEIRO</p><h2>Visões de tarefas</h2></div><div className="view-tabs">{(["Lista", "Quadro", "Calendário", "Gantt"] as const).map((view) => <button key={view} className={taskView === view ? "selected" : ""} onClick={() => setTaskView(view)}>{view}</button>)}<button className="new-view" onClick={() => setNotice("Nova visualização criada. A configuração será salva por departamento no Supabase.")}>+ Nova visão</button></div></div>
         {taskView === "Lista" && <div className="compact-list">{tasks.map((task) => <div key={task.id}><span className={`priority ${task.priority.toLowerCase()}`}/><strong>{task.title}</strong><small>{task.owner} · {task.due}</small><span className={`status ${task.status.toLowerCase().replace(" ", "-")}`}>{task.status}</span></div>)}</div>}
-        {taskView === "Quadro" && <div className="kanban">{(["Pendente", "Em aprovação", "Aprovado", "Executado"] as Status[]).map((status) => <div className="kanban-column" key={status}><header><strong>{status}</strong><span>{tasks.filter((task) => task.status === status).length}</span></header>{tasks.filter((task) => task.status === status).map((task) => <article key={task.id}><span className={task.priority === "Alta" ? "tag red-tag" : "tag"}>{task.company}</span><strong>{task.title}</strong><p>{task.owner} · {task.due}</p></article>)}</div>)}</div>}
+        {taskView === "Quadro" && <div className="kanban">{(["Pendente", "Em aprovação", "Aprovado", "Executado"] as Status[]).map((status) => <div className="kanban-column" key={status} onDragOver={(event) => event.preventDefault()} onDrop={() => void moveTaskToStatus(status)}><header><strong>{status}</strong><span>{tasks.filter((task) => task.status === status).length}</span></header>{tasks.filter((task) => task.status === status).map((task) => <article key={task.id} draggable onDragStart={() => setDraggedTaskId(task.id)} onDragEnd={() => setDraggedTaskId(null)}><span className={task.priority === "Alta" ? "tag red-tag" : "tag"}>{task.company}</span><strong>{task.title}</strong><p>{task.owner} · {task.due}</p></article>)}</div>)}</div>}
         {taskView === "Calendário" && <div className="calendar-view"><div className="calendar-title"><button className="secondary-button" onClick={() => setCalendarCursor((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}>‹</button><strong>{calendarCursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</strong><button className="secondary-button" onClick={() => setCalendarCursor((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}>›</button></div><div className="calendar-weekdays">{["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => <span key={day}>{day}</span>)}</div><div className="calendar-grid monthly">{calendarCells.map((day, index) => <div key={`${calendarCursor.toISOString()}-${index}`} className={day ? "calendar-day" : "calendar-day outside"}>{day && <><strong>{day}</strong>{tasks.filter((task) => { const date = taskDate(task.due); return date?.getFullYear() === calendarCursor.getFullYear() && date.getMonth() === calendarCursor.getMonth() && date.getDate() === day; }).map((task) => <button key={task.id} className="calendar-task" onClick={() => setDetailTask(task)}>{task.title}</button>)}</>}</div>)}</div></div>}
         {taskView === "Gantt" && <div className="gantt-view"><div className="gantt-scale"><span>03 ago</span><span>05 ago</span><span>07 ago</span><span>11 ago</span></div>{tasks.map((task, index) => <div className="gantt-row" key={task.id}><strong>{task.title}</strong><div><i style={{ marginLeft: `${index * 12}%`, width: `${34 + (index % 3) * 12}%` }}>{task.status}</i></div></div>)}</div>}
       </section>}

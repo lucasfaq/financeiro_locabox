@@ -67,7 +67,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [-] Botão de nova visualização apenas informa a intenção.
 - [ ] Criar, editar, salvar, compartilhar e excluir visualizações por lista/departamento.
 - [ ] Configurar agrupamento, filtros, ordenação, colunas e campos por visualização.
-- [ ] Quadro com arrastar entre status.
+- [x] Quadro com arrastar e soltar entre status, persistido para sessões autenticadas.
 - [x] Calendário baseado em datas reais de vencimento.
 - [ ] Gantt com períodos, dependências e progresso reais.
 - [ ] Painéis por empresa/departamento com indicadores calculados.
