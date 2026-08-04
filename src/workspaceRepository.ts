@@ -6,6 +6,7 @@ export type RemoteDepartment = { id: string; name: string; folders: RemoteFolder
 export type RemoteTaskStatus = "Pendente" | "Em aprovação" | "Aprovado" | "Executado";
 export type RemoteTask = { id: string; title: string; company: "ITP" | "Locabox"; category: string; due: string; owner: string; value: number; status: RemoteTaskStatus; priority: "Alta" | "Média" | "Baixa"; listId: string; taskType: "Tarefa" | "Aprovação" | "Financeiro" };
 export type CreateRemoteTask = Omit<RemoteTask, "id">;
+export type UpdateRemoteTask = Pick<RemoteTask, "title" | "due" | "value" | "priority" | "status" | "taskType">;
 export type RemoteSubtask = { id: string; title: string; done: boolean };
 export type RemoteComment = { id: string; content: string; author: string };
 export type RemoteAttachment = { id: string; name: string; path: string; mimeType: string | null; size: number | null };
@@ -226,6 +227,13 @@ export async function createFinancialTask(task: CreateRemoteTask, responsibleId?
 export async function updateFinancialTaskStatus(id: string, status: RemoteTaskStatus): Promise<void> {
   if (!supabase) throw new Error("Supabase não está configurado.");
   const { error } = await supabase.from("atividades_financeiras").update({ status: statusToDatabase[status] }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateFinancialTask(id: string, task: UpdateRemoteTask): Promise<void> {
+  if (!supabase) throw new Error("Supabase não está configurado.");
+  const dueDate = /^\d{4}-\d{2}-\d{2}$/.test(task.due) ? task.due : null;
+  const { error } = await supabase.from("atividades_financeiras").update({ titulo: task.title, vencimento: dueDate, valor_previsto: task.value, prioridade: priorityToDatabase[task.priority], status: statusToDatabase[task.status], tipo: typeToDatabase[task.taskType] }).eq("id", id);
   if (error) throw error;
 }
 
