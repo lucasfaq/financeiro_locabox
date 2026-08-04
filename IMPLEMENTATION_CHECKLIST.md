@@ -83,11 +83,11 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [ ] Chamada/reunião, se for requisito confirmado para o produto.
 - [ ] Vincular conversa a tarefa/lista/documento.
 - [-] Realtime de mensagens por canal conectado; presença e indicadores de leitura pendentes.
-- [ ] Notificações in-app, e-mail e preferências do usuário.
+- [-] Notificações in-app para decisão de aprovação e atividade atribuída; e-mail, menções e preferências do usuário permanecem pendentes.
 
 ## 6. Caixa de entrada, busca e documentos
 
-- [-] Caixa de Entrada lê e marca notificações reais para sessões autenticadas; modo local permanece como contingência e falta geração automática de notificações de negócio.
+- [-] Caixa de Entrada lê, recebe em tempo real e marca notificações reais para sessões autenticadas. Decisão de aprovação e atribuição de atividade geram notificações automáticas; solicitação de aprovação e menções permanecem pendentes.
 - [x] Biblioteca e editor simples de documentos locais.
 - [x] Templates locais para tarefa/processo/documento.
 - [-] Filtros de templates são visuais e a aplicação de template ainda não preenche a tarefa.

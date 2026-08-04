@@ -152,6 +152,14 @@ function Workspace() {
   }, [setInboxItems, usesRemoteTasks]);
   useEffect(() => {
     const client = supabase;
+    if (!client || !usesRemoteTasks) return;
+    const channel = client.channel("notificacoes-financeiro").on("postgres_changes", { event: "INSERT", schema: "public", table: "notificacoes" }, () => {
+      void loadNotifications().then((items) => { if (items) setInboxItems(items); });
+    }).subscribe();
+    return () => { void client.removeChannel(channel); };
+  }, [setInboxItems, usesRemoteTasks]);
+  useEffect(() => {
+    const client = supabase;
     if (!client || !usesRemoteTasks || !activeChannelId) return;
     const channel = client.channel(`mensagens-${activeChannelId}`).on("postgres_changes", { event: "*", schema: "public", table: "mensagens_canal", filter: `canal_id=eq.${activeChannelId}` }, () => { void loadChannelMessages(activeChannelId).then((items) => setMessages(items.map((item) => ({ author: item.author, initials: "EQ", time: "", text: item.content })))); }).subscribe();
     return () => { void client.removeChannel(channel); };
