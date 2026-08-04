@@ -274,7 +274,7 @@ function Workspace() {
     if (usesRemoteTasks && typeof task.id === "string") { try { await archiveFinancialTask(task.id, false); } catch { setNotice("Não foi possível restaurar a atividade."); return; } }
     setArchivedTasks((current) => current.filter((item) => item.id !== task.id)); setTasks((current) => [task, ...current]); setNotice("Tarefa restaurada.");
   };
-  const saveTask = async (task: Task, patch: Pick<Task, "title" | "description" | "start" | "due" | "value" | "priority" | "status" | "taskType">) => {
+  const saveTask = async (task: Task, patch: Pick<Task, "title" | "description" | "category" | "start" | "due" | "value" | "priority" | "status" | "taskType">) => {
     if (usesRemoteTasks && typeof task.id === "string") await updateFinancialTask(task.id, patch);
     const updated = { ...task, ...patch };
     setTasks((current) => current.map((item) => item.id === task.id ? updated : item));
