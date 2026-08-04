@@ -17,7 +17,7 @@ import { AdminUsers } from "./AdminUsers";
 import { CompaniesManagement } from "./CompaniesManagement";
 import { OrganizationAssignments } from "./OrganizationAssignments";
 import { TaskDetail } from "./TaskDetail";
-import { addChannelMember, archiveFinancialTask, clearReadNotifications, createChannelMessage, createFinancialTask, createWorkspaceChannel, createWorkspaceDepartment, createWorkspaceDocument, createWorkspaceFolder, createWorkspaceList, createWorkspaceTemplate, decideFinancialApproval, loadActiveWorkspaceUsers, loadChannelMembers, loadChannelMessages, loadFinancialTasks, loadNotifications, loadWorkspaceChannels, loadWorkspaceDocuments, loadWorkspaceHierarchy, loadWorkspaceTemplates, markNotificationRead, removeChannelMember, updateWorkspaceDocument, type RemoteChannelMember, type RemoteWorkspaceUser } from "./workspaceRepository";
+import { addChannelMember, archiveFinancialTask, clearReadNotifications, createChannelMessage, createFinancialTask, createWorkspaceChannel, createWorkspaceDepartment, createWorkspaceDocument, createWorkspaceFolder, createWorkspaceList, createWorkspaceTemplate, decideFinancialApproval, loadActiveWorkspaceUsers, loadArchivedFinancialTasks, loadChannelMembers, loadChannelMessages, loadFinancialTasks, loadNotifications, loadWorkspaceChannels, loadWorkspaceDocuments, loadWorkspaceHierarchy, loadWorkspaceTemplates, markNotificationRead, removeChannelMember, updateWorkspaceDocument, type RemoteChannelMember, type RemoteWorkspaceUser } from "./workspaceRepository";
 import { supabase } from "./supabaseClient";
 
 type Status = "Pendente" | "Em aprovação" | "Aprovado" | "Executado";
@@ -54,6 +54,8 @@ const taskDate = (due: string) => {
 
 function Workspace() {
   const [tasks, setTasks] = usePersistentState("itp-financeiro-tasks", initialTasks);
+  const [archivedTasks, setArchivedTasks] = useState<Task[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
   const [section, setSection] = useState("Visão geral");
   const [filter, setFilter] = useState<"Todos" | Status>("Todos");
   const [showModal, setShowModal] = useState(false);
@@ -216,6 +218,15 @@ function Workspace() {
     if (usesRemoteTasks && typeof task.id === "string") { try { await archiveFinancialTask(task.id); } catch { setNotice("Não foi possível arquivar a atividade compartilhada."); return; } }
     setTasks((current) => current.filter((item) => item.id !== task.id)); setDetailTask(null); setNotice("Tarefa arquivada.");
   };
+  const toggleArchived = async () => {
+    if (showArchived) { setShowArchived(false); return; }
+    if (usesRemoteTasks) { try { const items = await loadArchivedFinancialTasks(); setArchivedTasks(items ?? []); } catch { setNotice("Não foi possível carregar as tarefas arquivadas."); return; } }
+    setShowArchived(true);
+  };
+  const restoreTask = async (task: Task) => {
+    if (usesRemoteTasks && typeof task.id === "string") { try { await archiveFinancialTask(task.id, false); } catch { setNotice("Não foi possível restaurar a atividade."); return; } }
+    setArchivedTasks((current) => current.filter((item) => item.id !== task.id)); setTasks((current) => [task, ...current]); setNotice("Tarefa restaurada.");
+  };
 
   const createTask = async (form: HTMLFormElement) => {
     const data = new FormData(form);
@@ -358,7 +369,7 @@ function Workspace() {
         <article><span className="summary-icon green"><Check size={19} /></span><p>Concluídas no mês</p><strong>{tasks.filter((t) => t.status === "Executado").length + 18}</strong><small>+12% frente a julho</small></article>
       </div>
       {!channelOpen && <div className="content-grid">
-        <section className="task-panel"><div className="panel-header"><div><h2>Atividades recentes</h2><p>Acompanhamento operacional do financeiro</p></div><button className="text-button" onClick={() => { setSection("Atividades"); setFilter("Todos"); }}>Ver todas</button></div><div className="toolbar"><div className="search"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar atividade" /></div><div className="filters">{(["Todos", "Pendente", "Em aprovação", "Aprovado", "Executado"] as const).map((item) => <button key={item} className={filter === item ? "filter selected" : "filter"} onClick={() => setFilter(item)}>{item}</button>)}</div></div><div className="task-list">{visibleTasks.map((task) => <article className="task-row" key={task.id} onClick={() => setDetailTask(task)}><span className={`priority ${task.priority.toLowerCase()}`} /><div className="task-main"><strong>{task.title}</strong><span>{task.company} <em>•</em> {task.category}</span></div><div className="task-meta"><span>Vencimento</span><strong className={task.due === "Hoje" ? "urgent" : ""}>{task.due}</strong></div><div className="task-meta"><span>Responsável</span><strong>{task.owner}</strong></div><div className="task-value">{money(task.value)}</div><span className={`status ${task.status.toLowerCase().replace(" ", "-")}`}>{task.status}</span></article>)}{visibleTasks.length === 0 && <p className="empty">Nenhuma atividade encontrada.</p>}</div></section>
+        <section className="task-panel"><div className="panel-header"><div><h2>{showArchived ? "Tarefas arquivadas" : "Atividades recentes"}</h2><p>{showArchived ? "Histórico que pode ser restaurado" : "Acompanhamento operacional do financeiro"}</p></div><button className="text-button" onClick={() => void toggleArchived()}>{showArchived ? "Voltar às abertas" : "Arquivadas"}</button></div><div className="toolbar"><div className="search"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar atividade" /></div>{!showArchived && <div className="filters">{(["Todos", "Pendente", "Em aprovação", "Aprovado", "Executado"] as const).map((item) => <button key={item} className={filter === item ? "filter selected" : "filter"} onClick={() => setFilter(item)}>{item}</button>)}</div>}</div><div className="task-list">{(showArchived ? archivedTasks : visibleTasks).map((task) => <article className="task-row" key={task.id} onClick={() => !showArchived && setDetailTask(task)}><span className={`priority ${task.priority.toLowerCase()}`} /><div className="task-main"><strong>{task.title}</strong><span>{task.company} <em>•</em> {task.category}</span></div><div className="task-meta"><span>Vencimento</span><strong>{task.due}</strong></div><div className="task-meta"><span>Responsável</span><strong>{task.owner}</strong></div><div className="task-value">{money(task.value)}</div>{showArchived ? <button className="secondary-button" onClick={(event) => { event.stopPropagation(); void restoreTask(task); }}>Restaurar</button> : <span className={`status ${task.status.toLowerCase().replace(" ", "-")}`}>{task.status}</span>}</article>)}{(showArchived ? archivedTasks : visibleTasks).length === 0 && <p className="empty">Nenhuma atividade encontrada.</p>}</div></section>
         <aside className="approval-panel"><div className="panel-header"><div><h2>Para sua aprovação</h2><p>Decisões que exigem sua ação</p></div></div>{approvalTasks.map((task) => <article className="approval-card" key={task.id}><span>{task.company}</span><h3>{task.title}</h3><p>{task.category} <em>•</em> {task.due}</p><strong>{money(task.value)}</strong><div><button className="secondary-button" onClick={() => void decideApproval(task.id, false)}>Devolver</button><button className="approve-button" onClick={() => void decideApproval(task.id, true)}>Aprovar</button></div></article>)}{approvalTasks.length === 0 && <p className="empty">Não há aprovações pendentes.</p>}</aside>
       </div>}
       <section className={channelOpen ? "channel-workspace" : "collaboration-strip"}>

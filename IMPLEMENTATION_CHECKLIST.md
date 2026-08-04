@@ -40,7 +40,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [-] Menus de departamento/pasta: status, template e permissões apenas locais.
 - [ ] Menus completos para listas (renomear, status, template, permissões, exclusão).
 - [ ] Reordenação por arrastar e soltar.
-- [ ] Arquivamento/restauração em vez de exclusão definitiva.
+- [-] Arquivamento e restauração persistentes de tarefas; arquivamento de listas e demais entidades permanece pendente.
 - [ ] Permissões reais por empresa, departamento, pasta e lista.
 
 ## 3. Tarefas e aprovações
@@ -58,7 +58,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [-] Comentários e subtarefas persistentes conectados à interface; menções e progresso calculado continuam pendentes.
 - [-] Subtarefas persistentes e progresso calculado: schema pronto, cálculo e integração pendentes.
 - [ ] Filtros avançados combináveis, ordenação, grupos e colunas configuráveis.
-- [ ] Tarefas fechadas/arquivadas e recuperação.
+- [-] Tarefas arquivadas podem ser consultadas e restauradas no painel inicial; visão completa em todas as listas continua pendente.
 - [ ] Aprovações com regras, alçadas, evidências e trilha de decisão.
 
 ## 4. Visualizações e painéis
@@ -92,7 +92,7 @@ Legenda: `[x]` funcional no MVP local; `[-]` demonstrativo/local ou parcialmente
 - [-] Templates persistem no Supabase para sessões autenticadas, preservando fallback local sem conexão.
 - [-] Filtros de templates são visuais; aplicar um template agora preenche o título da nova tarefa, enquanto a instanciação completa da estrutura permanece pendente.
 - [ ] Caixa de Entrada consolidada com filtros: Todas, Principais, Outras, Mais tarde e Limpos.
-- [ ] Busca global de tarefas, listas, pessoas, mensagens e documentos.
+- [-] Busca global encontra tarefas, documentos, templates, canais e pessoas; listas e mensagens continuam pendentes.
 - [-] Documentos persistentes modelados; páginas, autosave, permissões e comentários pendentes.
 - [-] Bucket privado, upload, metadados e abertura por URL assinada conectados; pré-visualização continua pendente.
 - [-] Templates persistentes modelados; versionamento e uso para instanciar estruturas pendentes.
@@ -131,15 +131,15 @@ Esta varredura foi realizada em modo somente leitura, em uma sessão autenticada
 | Caixa de Entrada | Todas, Principais, Outras, Mais tarde, Limpos, Filtro, marcar tudo como lido e limpar tudo | Parcial: leitura e limpeza locais existem; abas completas e filtros faltam. |
 | Documentos | Biblioteca, busca, criar documento, páginas, autor e data de atualização | Parcial: biblioteca/editor local existem; páginas, colaboração, autosave, permissões e busca real faltam. |
 | Templates | Todos, Listas, Pastas, Espaços, Documentos; importar; salvar pelo menu contextual | Parcial: biblioteca e salvamento local existem; filtros funcionais, importação e uso para instanciar estrutura faltam. |
-| Busca global | Busca por Tasks, Docs, Mensagens, Comentários, Espaços e Pessoas; atalhos para navegar/abrir/fechar | Ausente. |
+| Busca global | Busca por Tasks, Docs, Mensagens, Comentários, Espaços e Pessoas; atalhos para navegar/abrir/fechar | Parcial: tarefas, documentos, templates, canais e pessoas estão pesquisáveis; mensagens, comentários, espaços e atalhos pendem. |
 | Notificações | Centro de notificações acessível pela navegação global e Caixa de Entrada consolidada | Parcial: apenas Caixa de Entrada local. |
 | Permissões | Menus de entidade e gerenciamento de canais/membros são visíveis; detalhes devem ser validados com dados/ação autorizada | Parcial: formulário local, sem persistência nem RLS. |
 
 ### Itens revelados pela auditoria e incluídos neste checklist
 
-- [ ] Busca global com filtros por tarefas, documentos, mensagens, comentários, espaços e pessoas.
+- [-] Busca global por tarefas, documentos, canais, templates e pessoas; filtros completos, mensagens, comentários e espaços pendem.
 - [ ] Atalhos de teclado e comando rápido para busca/navegação.
-- [ ] Aba de tarefas fechadas e restauração.
+- [-] Aba de tarefas arquivadas e restauração disponível no painel inicial; falta abrangê-la nas visualizações por lista.
 - [ ] Filtro da Caixa de Entrada e categorias Principais, Outras e Mais tarde.
 - [ ] Marcar tudo como lido e limpar tudo com dados reais.
 - [ ] Colunas de tarefa: nome, responsáveis, início, vencimento e comentários; configuração por visualização.

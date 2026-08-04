@@ -199,6 +199,16 @@ export async function loadFinancialTasks(): Promise<RemoteTask[] | null> {
   return (tasks ?? []).map((task) => toRemoteTask(task, companyNames.get(task.empresa_id)));
 }
 
+export async function loadArchivedFinancialTasks(): Promise<RemoteTask[] | null> {
+  if (!supabase) return null;
+  const { data: companies, error: companyError } = await supabase.from("empresas").select("id,nome").eq("ativo", true);
+  if (companyError) throw companyError;
+  const { data: tasks, error: taskError } = await supabase.from("atividades_financeiras").select("id,titulo,valor_previsto,vencimento,prioridade,status,responsavel_id,lista_id,tipo,empresa_id").not("arquivada_em", "is", null).order("arquivada_em", { ascending: false });
+  if (taskError) throw taskError;
+  const companyNames = new Map((companies ?? []).map((company) => [company.id, company.nome]));
+  return (tasks ?? []).map((task) => toRemoteTask(task, companyNames.get(task.empresa_id)));
+}
+
 export async function createFinancialTask(task: CreateRemoteTask, responsibleId?: string): Promise<RemoteTask> {
   if (!supabase) throw new Error("Supabase não está configurado.");
   const { data: authData, error: authError } = await supabase.auth.getUser();
