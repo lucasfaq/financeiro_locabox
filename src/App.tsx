@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, Building2, CalendarDays, Check, ChevronDown, ChevronRight, CirclePlus, ClipboardList, Clock3, FileText, Folder, Hash, LayoutDashboard, List, MessageCircle, MoreHorizontal, Search, Send, Settings, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { Bell, Building2, Check, ChevronDown, ChevronRight, CirclePlus, ClipboardList, Clock3, FileText, Folder, Hash, LayoutDashboard, List, MessageCircle, MoreHorizontal, Search, Send, Settings, ShieldCheck, Sparkles, Users } from "lucide-react";
 import "./App.css";
 import "./Channel.css";
 import { TemplatesLibrary, type TaskTemplate } from "./TemplatesLibrary";
@@ -453,7 +453,7 @@ function Workspace() {
     <aside className={sidebarCollapsed ? "sidebar collapsed" : "sidebar"}>
       <div className="brand"><div className="brand-mark">L</div><div><strong>ITP <span>/</span> Locabox</strong><small>Gestão financeira</small></div><button className="sidebar-toggle" aria-label={sidebarCollapsed ? "Expandir barra lateral" : "Recolher barra lateral"} onClick={() => setSidebarCollapsed((current) => !current)}>{sidebarCollapsed ? "›" : "‹"}</button></div>
       <nav>
-        {[{ label: "Visão geral", icon: LayoutDashboard }, { label: "Caixa de Entrada", icon: Bell }, { label: "Atividades", icon: ClipboardList }, { label: "Aprovações", icon: ShieldCheck }, { label: "Calendário", icon: CalendarDays }, { label: "Documentos", icon: FileText }, { label: "Templates", icon: FileText }].map(({ label, icon: Icon }) => <button key={label} className={section === label ? "nav-link active" : "nav-link"} onClick={() => { setSection(label); setChannelOpen(false); }}><Icon size={18} />{label}{label === "Aprovações" && approvalTasks.length > 0 && <b>{approvalTasks.length}</b>}</button>)}
+        {[{ label: "Visão geral", icon: LayoutDashboard }, { label: "Caixa de Entrada", icon: Bell }, { label: "Aprovações", icon: ShieldCheck }, { label: "Documentos", icon: FileText }, { label: "Templates", icon: FileText }].map(({ label, icon: Icon }) => <button key={label} className={section === label ? "nav-link active" : "nav-link"} onClick={() => { setSection(label); setChannelOpen(false); }}><Icon size={18} />{label}{label === "Aprovações" && approvalTasks.length > 0 && <b>{approvalTasks.length}</b>}</button>)}
       </nav>
       <div className="channel-nav">
         <div className="sidebar-group-title"><p>CANAIS</p><button aria-label="Adicionar canal" onClick={() => setCreateTarget("canal")}>+</button></div>
