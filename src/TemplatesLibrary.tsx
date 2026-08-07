@@ -1,22 +1,24 @@
 import { CopyPlus, FileStack, LayoutTemplate, Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import "./TemplatesLibraryForm.css";
 
 export type TaskTemplate = { id: string | number; name: string; category: string; description: string };
 
 type Props = {
   templates: TaskTemplate[];
-  onSaveCurrent: () => void;
+  onCreate: (template: Omit<TaskTemplate, "id">) => Promise<void>;
   onUse: (template: TaskTemplate) => void;
   onUpdate: (id: TaskTemplate["id"], patch: Omit<TaskTemplate, "id">) => Promise<void>;
   onDelete: (id: TaskTemplate["id"]) => Promise<void>;
 };
 
-export function TemplatesLibrary({ templates, onSaveCurrent, onUse, onUpdate, onDelete }: Props) {
+export function TemplatesLibrary({ templates, onCreate, onUse, onUpdate, onDelete }: Props) {
   const [filter, setFilter] = useState<"Todos" | "Tarefas" | "Processos" | "Documentos">("Todos");
   const [deletingId, setDeletingId] = useState<TaskTemplate["id"] | null>(null);
   const [editingId, setEditingId] = useState<TaskTemplate["id"] | null>(null);
   const [draft, setDraft] = useState<Omit<TaskTemplate, "id">>({ name: "", category: "", description: "" });
   const [saving, setSaving] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const visibleTemplates = useMemo(() => templates.filter((template) => {
     if (filter === "Todos") return true;
@@ -29,6 +31,28 @@ export function TemplatesLibrary({ templates, onSaveCurrent, onUse, onUpdate, on
     setErrorMessage("");
     setDraft({ name: template.name, category: template.category, description: template.description });
     setEditingId(template.id);
+  };
+  const startCreating = () => {
+    setErrorMessage("");
+    setDraft({ name: "", category: "Tarefa", description: "" });
+    setEditingId(null);
+    setCreating(true);
+  };
+  const createTemplate = async () => {
+    if (draft.name.trim().length < 2 || !draft.category.trim()) {
+      setErrorMessage("Informe nome e categoria do template.");
+      return;
+    }
+    setErrorMessage("");
+    setSaving(true);
+    try {
+      await onCreate({ name: draft.name.trim(), category: draft.category.trim(), description: draft.description.trim() });
+      setCreating(false);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Não foi possível criar o template.");
+    } finally {
+      setSaving(false);
+    }
   };
   const saveTemplate = async (template: TaskTemplate) => {
     if (draft.name.trim().length < 2 || !draft.category.trim()) {
@@ -59,9 +83,10 @@ export function TemplatesLibrary({ templates, onSaveCurrent, onUse, onUpdate, on
     }
   };
   return <section className="templates-library">
-    <div className="templates-heading"><div><p className="eyebrow">BIBLIOTECA DO ESPAÇO DE TRABALHO</p><h2>Templates</h2><p>Modelos reutilizáveis de tarefas e processos do departamento.</p></div><button className="primary-button" onClick={onSaveCurrent}><Plus size={17} />Salvar visão como template</button></div>
+    <div className="templates-heading"><div><p className="eyebrow">BIBLIOTECA DO ESPAÇO DE TRABALHO</p><h2>Templates</h2><p>Modelos reutilizáveis de tarefas e processos do departamento.</p></div><button className="primary-button" onClick={startCreating}><Plus size={17} />Novo template</button></div>
     <div className="template-filters">{(["Todos", "Tarefas", "Processos", "Documentos"] as const).map((option) => <button key={option} className={filter === option ? "selected" : ""} onClick={() => setFilter(option)}>{option}</button>)}</div>
     {errorMessage && <p className="template-error">{errorMessage}</p>}
+    {creating && <form className="template-create" onSubmit={(event) => { event.preventDefault(); void createTemplate(); }}><div><h3>Novo template</h3><p>Defina as informações que serão aplicadas quando este modelo for usado.</p></div><label>Nome<input autoFocus value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} placeholder="Ex.: Conferência de pagamento" /></label><label>Categoria<input value={draft.category} onChange={(event) => setDraft((current) => ({ ...current, category: event.target.value }))} placeholder="Ex.: Processo financeiro" /></label><label>Descrição<textarea value={draft.description} onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))} placeholder="Explique quando e como usar este modelo." /></label><div className="template-create-actions"><button className="primary-button" disabled={saving}>{saving ? "Criando…" : "Criar template"}</button><button type="button" className="secondary-button" disabled={saving} onClick={() => setCreating(false)}>Cancelar</button></div></form>}
     {templates.length === 0 ? <div className="template-empty"><LayoutTemplate size={28}/><h3>Nenhum template salvo</h3><p>Salve uma visão ou processo do departamento para reutilizá-lo depois.</p></div> : visibleTemplates.length === 0 ? <div className="template-empty"><LayoutTemplate size={28}/><h3>Nenhum template nesta categoria</h3><p>Escolha outra categoria ou salve um novo modelo.</p></div> : <div className="template-grid">{visibleTemplates.map((template) => <article key={template.id}><span><FileStack size={18}/>{template.category}</span>{editingId === template.id ? <div className="template-edit"><input aria-label="Nome do template" value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}/><input aria-label="Categoria do template" value={draft.category} onChange={(event) => setDraft((current) => ({ ...current, category: event.target.value }))}/><textarea aria-label="Descrição do template" value={draft.description} onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))}/><div><button className="primary-button" disabled={saving} onClick={() => void saveTemplate(template)}>{saving ? "Salvando…" : "Salvar"}</button><button className="secondary-button" disabled={saving} onClick={() => setEditingId(null)}>Cancelar</button></div></div> : <><h3>{template.name}</h3><p>{template.description}</p><button className="secondary-button" onClick={() => onUse(template)}><CopyPlus size={15}/>Usar template</button><button className="secondary-button" onClick={() => startEditing(template)}><Pencil size={15}/>Editar</button><button className="secondary-button" disabled={deletingId === template.id} onClick={() => void removeTemplate(template)}><Trash2 size={15}/>{deletingId === template.id ? "Excluindo…" : "Excluir"}</button></>}</article>)}</div>}
   </section>;
 }
